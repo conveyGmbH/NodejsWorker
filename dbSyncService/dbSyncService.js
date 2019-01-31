@@ -179,7 +179,7 @@
                     dataImportBarcodeScan.SpracheID = myResult[1][33].substring(1, myResult[1][33].length - 1);
                     dataImportBarcodeScan.PostfachPLZ = myResult[1][30].substring(1, myResult[1][30].length - 1);
                     dataImportBarcodeScan.Branche = myResult[1][36].substring(1, myResult[1][36].length - 1);
-
+                    dataImportBarcodeScan.Kommentar = pErrorMessage;
                     if (!pErrorMessage) {
                         pAktionStatus = null;
                         pStatusId = 1;
