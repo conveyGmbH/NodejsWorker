@@ -86,6 +86,17 @@
                 },
                 function (json) {
                     Log.print(Log.l.trace, "PRC_STARTVCARD success!");
+                    if (json && json.d && json.d.results && json.d.results.length > 0) {
+                        importcardscanid = json.d.results[0].Import_CARDSCANVIEWID;
+                        Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
+                        var barcode2Result = json.d.results[0].Barcode2;
+                        dataImportCardscanVcard = json.d.results[0];
+                        if (barcode2Result) {
+                            myResult = barcode2Result;
+                            //isValidBase64String = myResult.search("/^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/");
+                            //Log.print(Log.l.trace, "isValidBase64String: " + isValidBase64String);
+                        }
+                    }
                     startOk = true;
                 },
                 function (error) {
@@ -93,7 +104,7 @@
                     Log.print(Log.l.error,
                         "PRC_STARTVCARD error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
-                }).then(function selectimportCardscanODataView() {
+                })/*.then(function selectimportCardscanODataView() {
                     Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus);
                     if (!startOk) {
                         Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
@@ -137,8 +148,12 @@
                         {
                             Button: pAktionStatus
                         });
-                }).then(function () {
-                    Log.call(Log.l.trace, "bcrService.", "myResult=" + myResult);
+                })*/.then(function () {
+                    Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult=" + myResult);
+                    if (!startOk) {
+                        Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
+                        return WinJS.Promise.as();
+                    }
                     if (!myResult) {
                         Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                         return WinJS.Promise.as();

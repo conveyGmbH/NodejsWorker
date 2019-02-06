@@ -55,12 +55,21 @@
                 pAktionStatus: pAktionStatus
             }, function (json) {
                 Log.print(Log.l.trace, "PRC_STARTCARDOCREX success!");
+                if (json.d.results && json.d.results.length > 0) {
+                    importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
+                    Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
+                    var docContent = json.d.results[0].DocContentDOCCNT1;
+                    if (docContent) {
+                        var sub = docContent.search("\r\n\r\n");
+                        options.data = b64js.toByteArray(docContent.substr(sub + 4));
+                    }
+                }
                 startOk = true;
             }, function (error) {
                 that.errorCount++;
                 Log.print(Log.l.error, "PRC_STARTCARDOCREX error! " + that.successCount + " success / " + that.errorCount + " errors");
                 that.timestamp = new Date();
-            }).then(function selectCardscanView20507() {
+            })/*.then(function selectCardscanView20507() {
                 Log.call(Log.l.trace, "callOcr.", "pAktionStatus=" + pAktionStatus);
                 if (!startOk) {
                     Log.ret(Log.l.trace, "PRC_STARTCARDOCREX failed!");
@@ -90,8 +99,12 @@
                     Log.print(Log.l.error, "select error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, { Button: pAktionStatus });
-            }).then(function ocrPostRequest() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+            })*/.then(function ocrPostRequest() {
+                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid + " pAktionStatus=" + pAktionStatus);
+                if (!startOk) {
+                    Log.ret(Log.l.trace, "PRC_STARTCARDOCREX failed!");
+                    return WinJS.Promise.as();
+                }
                 if (!importcardscanid) {
                     Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
