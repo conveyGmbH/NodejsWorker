@@ -55,9 +55,9 @@
             hostName: "lstest.convey.de", //"lstest.convey.de"
             onlinePort: 443, //443
             urlSuffix: null,
-            onlinePath: "Lstest-client01odata_online", // serviceRoot online requests Lstest-client01odata_online
-            login: "CloudUser", // adminhx   CloudUser   6hbamVbQxDbSDLEC
-            password: "McYxEuBKJZ:tVC4)E", // client01     McYxEuBKJZ:tVC4)E   
+            onlinePath: "Lstest-client01odata_online",
+            login: "CloudUser",
+            password: "",
             registerPath: "odata_register", // serviceRoot register requests
             registerLogin: "AppRegister",
             registerPassword: "6530bv6OIUed3",
