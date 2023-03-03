@@ -74,6 +74,7 @@
             var importBarcodeScanData = null;
             var dataVCard = null; // {}
             var importcardscanid = 0;
+            var kontaktID = 0;
             //var cardscanbulkid = 0;
             var dataImportCardscan = {};
             var dataImportCardscanVcard = null;
@@ -88,6 +89,7 @@
                     Log.print(Log.l.trace, "PRC_STARTVCARD success!");
                     if (json && json.d && json.d.results && json.d.results.length > 0) {
                         importcardscanid = json.d.results[0].Import_CARDSCANVIEWID;
+                        kontaktID = json.d.results[0].KontaktID;
                         Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
                         var barcode2Result = json.d.results[0].Barcode2;
                         dataImportCardscanVcard = json.d.results[0];
@@ -149,15 +151,15 @@
                             Button: pAktionStatus
                         });
                 })*/.then(function () {
-                    Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult=" + myResult);
+                    Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult= " + myResult);
                     if (!startOk) {
                         Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
                         return WinJS.Promise.as();
                     }
-                    if (!myResult) {
+                    /*if (!myResult) {
                         Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                         return WinJS.Promise.as();
-                    }
+                    }*/
                     if (myResult.substr(0, "#LSAD01".length) === "#LSAD01") {
                         myResult = myResult.substring(7);
                         //console.log(myResult);
@@ -201,10 +203,10 @@
                     return WinJS.Promise.as();
                 }).then(function unzipResult() {
                     Log.call(Log.l.trace, "bcrService.", "myResult=" + myResult);
-                    if (!myResult) {
+                    /*if (!myResult) {
                         Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                         return WinJS.Promise.as();
-                    }
+                    }*/
                     Log.call(Log.l.trace, "callBcr.", "dataVCard=" + dataVCard);
                     if (myResult && myResult.substr(0, "#LSAD00".length) === "#LSAD00") {
                         myResult = myResult.substring(7);
@@ -413,21 +415,41 @@
                         }, importcardscanid, dataImportCardscanVcard);
 
                     } else {
-                        importBarcodeScanData.Request_Barcode = requestBarcode;
+                        //importBarcodeScanData.Request_Barcode = requestBarcode;
                         return that._importBarcodeScan_ODataView.insert(function (json) {
                             Log.print(Log.l.trace, "insert importBarcodeScan: success!");
+                            that.successCount++;
+                            Log.print(Log.l.info,
+                                "_importBarcodeScan_ODataView insert: success! " +
+                                that.successCount +
+                                " success / " +
+                                that.errorCount +
+                                " errors");
+                            that.timestamp = new Date();
                             // contactData returns object already parsed from json file in response
                             if (json && json.d) {
-
+                                complete(json);
                             } else {
                                 AppData.setErrorMsg(that.binding, { status: 404, statusText: "no data found" });
                             }
-                            complete(json);
-                        }, function (errorResponse) {
-                            // called asynchronously if an error occurs
-                            // or server returns response with an error status.
-                            AppData.setErrorMsg(that.binding, errorResponse);
-                        }, importBarcodeScanData);
+                        },
+                            function (errorResponse) {
+                                // called asynchronously if an error occurs
+                                // or server returns response with an error status.
+                                that.errorCount++;
+                                Log.print(Log.l.error,
+                                    "_importBarcodeScan_ODataView error! " +
+                                    that.successCount +
+                                    " success / " +
+                                    that.errorCount +
+                                    " errors");
+                                that.timestamp = new Date();
+                                AppData.setErrorMsg(that.binding, errorResponse);
+                            },
+                            {
+                                Request_Barcode: requestBarcode,
+                                KontaktID: kontaktID
+                            });
                     }
                 });
             return ret;
