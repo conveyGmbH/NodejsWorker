@@ -184,40 +184,17 @@
                                     return degrees * (pi / 180);
                                 };
 
-                                var radians = null;
-
-                                function rotateX(x_point, y_point, x_origin, y_origin, degrees) {
-                                    radians = degrees_to_radians(degrees);
-                                    var x = x_point;
-                                    var y = y_point
-                                    var offset_x = x_origin;
-                                    var offset_y = y_origin;
-                                    var adjusted_x = (x - offset_x);
-                                    var adjusted_y = (y - offset_y);
+                                function rotatePoint(point, degrees) {
+                                    var radians = degrees_to_radians(degrees);
                                     var cos_rad = Math.cos(radians);
                                     var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians) ;
 
-                                    var qx = offset_x + cos_rad * adjusted_x - sin_rad * adjusted_y;
-                                    var qy = offset_y + sin_rad * adjusted_x + cos_rad * adjusted_y;
-
-                                    return qx;
-                                };
-
-                                function rotateY(x_point, y_point, x_origin, y_origin, degrees) {
-                                    radians = degrees_to_radians(degrees);
-                                    var x = x_point;
-                                    var y = y_point
-                                    var offset_x = x_origin;
-                                    var offset_y = y_origin;
-                                    var adjusted_x = (x - offset_x);
-                                    var adjusted_y = (y - offset_y);
-                                    var cos_rad = Math.cos(radians);
-                                    var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
-
-                                    var qx = offset_x + cos_rad * adjusted_x - sin_rad * adjusted_y;
-                                    var qy = offset_y + sin_rad * adjusted_x + cos_rad * adjusted_y;
-
-                                    return qy;
+                                    var qx = cos_rad * point.x - sin_rad * point.y;
+                                    var qy = sin_rad * point.x + cos_rad * point.y;
+                                    if (ocr_angle < 0) {
+                                        qy = -qy
+                                    }
+                                    return {x: qx, y: qy };
                                 };
 
                                 if (myresultJson &&
@@ -237,17 +214,19 @@
                                                     for (var l = 0; l < myBoundingBox.length - 1; l = l + 2) {
                                                         var x = parseInt(myBoundingBox[l]);
                                                         var y = parseInt(myBoundingBox[l + 1]);
-                                                        var rotatedx, rotatedy = null;
+                                                        var rotatedPoint = null;
                                                         if (ocr_angle < 0) {
-                                                            rotatedx = rotateX(x, - y, 0, 0, ocr_angle);
-                                                            rotatedy = - rotateY(x, - y, 0, 0, ocr_angle);
+                                                           //rotatedx = rotateX(x, - y, 0, 0, ocr_angle);
+                                                           // rotatedy = - rotateY(x, - y, 0, 0, ocr_angle);
+                                                            rotatedPoint = rotatePoint({x: x, y: -y}, ocr_angle);
                                                         } else {
-                                                            rotatedx = rotateX(x, y, 0, 0, ocr_angle);
-                                                            rotatedy = rotateY(x, y, 0, 0, ocr_angle);
+                                                            //rotatedx = rotateX(x, y, 0, 0, ocr_angle);
+                                                            //rotatedy = rotateY(x, y, 0, 0, ocr_angle);
+                                                            rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
                                                         }
 
-                                                        boundingBoxRotated.push(rotatedx);
-                                                        boundingBoxRotated.push(rotatedy);
+                                                        boundingBoxRotated.push(rotatedPoint.x);
+                                                        boundingBoxRotated.push(rotatedPoint.y);
                                                     }
                                                     if (ocr_angle) {
                                                         myBoundingBox = boundingBoxRotated;
