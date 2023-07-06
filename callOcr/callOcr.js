@@ -44,6 +44,7 @@
             var startOk = false;
             var myResult = "";
             var importcardscanid = 0;
+            var docContent = null;
             var cardscanbulkid = 0;
             var languageCode = "";
             var dataImportCardscan = {};
@@ -59,7 +60,7 @@
                 if (json.d.results && json.d.results.length > 0) {
                     importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
                     Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
-                    var docContent = json.d.results[0].DocContentDOCCNT1;
+                    docContent = json.d.results[0].DocContentDOCCNT1;
                     if (docContent) {
                         var sub = docContent.search("\r\n\r\n");
                         options.data = b64js.toByteArray(docContent.substr(sub + 4));
