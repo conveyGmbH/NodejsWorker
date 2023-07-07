@@ -166,9 +166,11 @@
                     if (myResult && myResult[1][22] && myResult[1][22] !== "") {
                         dataImportBarcodeScan.RequestUser = myResult[1][1].substring(1, myResult[1][1].length - 1);
                         dataImportBarcodeScan.RequestHost = myResult[1][2].substring(1, myResult[1][2].length - 1);
-                        var requestTSinMS = new Date(myResult[1][3].substring(1, myResult[1][3].length - 1)).getTime();
-                       // dataImportBarcodeScan.RequestTS = "/Date(" + dateObjectRequestTS + ")/"; //myResult[1][3].substring(1, myResult[1][3].length - 1); //timestamp ungültig bzw nicht richtiger Format
-                        dataImportBarcodeScan.RequestTS = "/Date(" + requestTSinMS + ")/";
+                        var requestTS_local = new Date(myResult[1][3].substring(1, myResult[1][3].length - 1));
+                        var requestTS_UTC = Date.UTC(requestTS_local.getUTCFullYear(), requestTS_local.getUTCMonth(),
+                            requestTS_local.getUTCDate(), requestTS_local.getUTCHours(),
+                            requestTS_local.getUTCMinutes(), requestTS_local.getUTCSeconds());
+                        dataImportBarcodeScan.RequestTS = "/Date(" + requestTS_UTC + ")/";
                         dataImportBarcodeScan.Anrede = myResult[1][5].substring(1, myResult[1][5].length - 1);
                         dataImportBarcodeScan.Titel = myResult[1][6].substring(1, myResult[1][6].length - 1);
                         dataImportBarcodeScan.Vorname = myResult[1][7].substring(1, myResult[1][7].length - 1);
