@@ -1909,7 +1909,7 @@ html.win-hoverable .win-itemcontainer.win-selectionstylefilled.win-selected a:ho
 }
 @media (-ms-high-contrast) {
   .win-listview .win-groupheader {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-selectioncheckmark {
     color: HighlightText;
@@ -1917,12 +1917,12 @@ html.win-hoverable .win-itemcontainer.win-selectionstylefilled.win-selected a:ho
   .win-listview .win-focusedoutline,
   .win-listview .win-groupheader,
   .win-itemcontainer .win-focusedoutline {
-    outline-color: WindowText;
+    outline-color: var(--WindowText);
   }
   .win-listview.win-selectionstylefilled .win-itembox,
   .win-itemcontainer.win-selectionstylefilled .win-itembox {
-    background-color: Window;
-    color: WindowText;
+    background-color: var(--Window);
+    color: var(--WindowText);
   }
   html.win-hoverable .win-listview.win-selectionstylefilled .win-container:hover .win-itembox,
   html.win-hoverable .win-itemcontainer.win-selectionstylefilled.win-container:hover .win-itembox {
@@ -2424,9 +2424,9 @@ button.win-navigation-backbutton:enabled:hover:active {
 }
 @media (-ms-high-contrast) {
   .win-tooltip {
-    background-color: Window;
-    border-color: WindowText;
-    color: WindowText;
+    background-color: var(--Window);
+    border-color: var(--WindowText);
+    color: var(--WindowText);
   }
 }
 .win-rating {
@@ -3126,10 +3126,10 @@ button.win-hub-section-header-tabstop:-ms-keyboard-active {
   html.win-hoverable button.win-hub-section-header-tabstop:hover,
   button.win-hub-section-header-tabstop:hover:active {
     background-color: transparent;
-    color: WindowText;
+    color: var(--WindowText);
   }
   button.win-hub-section-header-tabstop:-ms-keyboard-active {
-    color: WindowText;
+    color: var(--WindowText);
   }
   html.win-hoverable button.win-hub-section-header-tabstop.win-hub-section-header-interactive:hover,
   button.win-hub-section-header-tabstop.win-hub-section-header-interactive:hover:active {
@@ -7411,7 +7411,7 @@ html.win-hoverable .win-ui-dark button.win-splitviewpanetoggle:hover {
   .win-dropdown {
     background-color: ButtonFace;
     border-color: ButtonText;
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-dropdown:hover {
     border-color: Highlight;
@@ -7501,11 +7501,11 @@ html.win-hoverable .win-ui-dark button.win-splitviewpanetoggle:hover {
   }
   .win-textbox:-ms-input-placeholder,
   .win-textarea:-ms-input-placeholder {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-textbox::-ms-input-placeholder,
   .win-textarea::-ms-input-placeholder {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-textbox:disabled:-ms-input-placeholder,
   .win-textarea:disabled:-ms-input-placeholder {
@@ -7566,7 +7566,7 @@ html.win-hoverable .win-ui-dark button.win-splitviewpanetoggle:hover {
     background-color: Highlight;
   }
   .win-toggleswitch-on.win-toggleswitch-disabled .win-toggleswitch-thumb {
-    background-color: Background;
+    background-color: var(--Background);
   }
   .win-toggleswitch-on.win-toggleswitch-disabled .win-toggleswitch-track {
     background-color: GrayText;
@@ -7585,7 +7585,7 @@ html.win-hoverable .win-ui-dark button.win-splitviewpanetoggle:hover {
     background-color: Highlight;
   }
   .win-pivot .win-pivot-title {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-pivot .win-pivot-navbutton {
     background-color: Highlight;
@@ -7847,16 +7847,16 @@ html.win-hoverable .win-ui-dark button.win-splitviewpanetoggle:hover {
     display: none;
   }
   .win-contentdialog-dialog {
-    background-color: Window;
+    background-color: var(--Window);
   }
   .win-contentdialog-title {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-contentdialog-content {
-    color: WindowText;
+    color: var(--WindowText);
   }
   .win-contentdialog-backgroundoverlay {
-    background-color: Window;
+    background-color: var(--Window);
     opacity: 0.6;
   }
   .win-splitview-pane {
