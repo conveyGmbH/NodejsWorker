@@ -9,55 +9,295 @@
     "use strict";
 
     const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
-    const fs = require("fs");
+    const UUID = require("uuid-js");
+    const b64js = require("base64-js");
+    //const fs = require("fs");
 
-    var fileName = "images/business_card.jpg";
+    //var fileName = "images/business_card.jpg";
 
     // Set up the request
     var dispatcher = {
         startup: function () {
             Log.call(Log.l.trace, "recognizeBusinessCard.");
-            this.timestamp = null;
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 60000;
+            this.waitTimeMs = 1000;
+            this.timestamp = null;
 
             // You will need to set these environment variables or edit the following values
             this.endpoint = "https://westeurope.api.cognitive.microsoft.com/";
             this.apiKey = "eb0abaaf63d3477c95c3f6f645be1eab";
 
+            this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
+            this._importCardscanView20507 = AppData.getFormatView("IMPORT_CARDSCAN", 20507, false);
+            this._importCardscanBulk_ODataView = AppData.getFormatView("ImportCardScanBulk", 0, false);
+            this.results = [];
+            var uuid = UUID.create();
+            this.ocrUuid = uuid.toString();
             Log.ret(Log.l.trace);
             return WinJS.Promise.as();
         },
 
         activity: function () {
             Log.call(Log.l.trace, "recognizeBusinessCard.");
+            var startOk = false;
+            var myResult = "";
+            var importcardscanid = 0;
+            var docContent = null;
+            var cardscanbulkid = 0;
+            var data = "";
+            var languageCode = "";
+            var dataImportCardscan = {};
 
-            var readStream = fs.createReadStream(fileName);
+            var that = this;
+            var pAktionStatus = "OCR_START" + this.ocrUuid; //"OCR_START" + this.ocrUuid;
 
+            //var readStream = fs.createReadStream(fileName);
             var client = new DocumentAnalysisClient(this.endpoint, new AzureKeyCredential(this.apiKey));
-
-            var promise = new WinJS.Promise.timeout(0).then(function() {
-                client.beginAnalyzeDocument("prebuilt-businessCard", readStream).then(function (poller) {
-                    return poller.pollUntilDone();
-                }).then(function (result) {
-                    if (result && result.documents && result.documents[0]) {
-                        var fields = result.documents[0].fields;
-                        for (var fieldName in fields) {
-                            if (fields.hasOwnProperty(fieldName)) {
-                                var values = fields[fieldName] && fields[fieldName].values;
-                                if (values && values[0] && values[0].value) {
-                                    Log.print(Log.l.trace, fieldName + ": " + values[0].value.replace(/\n/g," ") + " (confidence: " + values[0].confidence + "%)");
+            var ret = AppData.call("PRC_STARTCARDOCREX", {
+                pAktionStatus: pAktionStatus
+            }, function (json) {
+                Log.print(Log.l.trace, "PRC_STARTCARDOCREX success!");
+                if (json.d.results && json.d.results.length > 0) {
+                    importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
+                    Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
+                    docContent = json.d.results[0].DocContentDOCCNT1;
+                    if (docContent) {
+                        var sub = docContent.search("\r\n\r\n");
+                        data = b64js.toByteArray(docContent.substr(sub + 4));
+                    }
+                }
+                startOk = true;
+            }, function (error) {
+                that.errorCount++;
+                Log.print(Log.l.error, "PRC_STARTCARDOCREX error! " + that.successCount + " success / " + that.errorCount + " errors");
+                that.timestamp = new Date();
+            }).then(function ocrPostRequest() {
+                Log.print(Log.l.trace, "importcardscanid=" + importcardscanid + " pAktionStatus=" + pAktionStatus);
+                if (!startOk) {
+                    Log.ret(Log.l.trace, "PRC_STARTCARDOCREX failed!");
+                    return WinJS.Promise.as();
+                }
+                if (!importcardscanid) {
+                    Log.ret(Log.l.trace, "no record found!");
+                    return WinJS.Promise.as();
+                }
+                if (!data) {
+                    that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.trace, "no data returned! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                var promise = new WinJS.Promise.timeout(0).then(function beginAnalyzeDocument() {
+                    client.beginAnalyzeDocument("prebuilt-businessCard", data).then(function (poller) {
+                        return poller.pollUntilDone();
+                    }).then(function (result) {
+                        var err, text;
+                        if (result && result.documents && result.documents[0]) {
+                            try {
+                                function degrees_to_radians(degrees) {
+                                    var pi = Math.PI;
+                                    return degrees * (pi / 180);
+                                };
+    
+                                function rotatePoint(point, degrees) {
+                                    var radians = degrees_to_radians(degrees);
+                                    var cos_rad = Math.cos(radians);
+                                    var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians) ;
+    
+                                    var qx = cos_rad * point.x - sin_rad * point.y;
+                                    var qy = sin_rad * point.x + cos_rad * point.y;
+                                    if (ocr_angle < 0) {
+                                        qy = -qy
+                                    }
+                                    return {x: qx, y: qy };
+                                };
+                                var readResults = result.pages;
+                                if (readResults && readResults.length > 0) {
+                                    for (var i = 0; i < readResults.length; i++) {
+                                        for (var k = 0; k < readResults[i].words.length; k++) {
+                                            var myBoundingBox = readResults[i].words[k].polygon;
+                                            var ocr_angle = readResults[i].angle;
+                                            var lfHeight = 15;
+                                            var text = readResults[i].words[k].content;
+                                            var boundingBoxRotated = [];
+                                            for (var l = 0; l < myBoundingBox.length; l++) {
+                                                var x = myBoundingBox[l].x;
+                                                var y = myBoundingBox[l].y;
+                                                var rotatedPoint = null;
+                                                if (ocr_angle < 0) {
+                                                    rotatedPoint = rotatePoint({x: x, y: -y}, ocr_angle);
+                                                } else {
+                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                                }
+                                                boundingBoxRotated.push({
+                                                    x: rotatedPoint.x,
+                                                    y: rotatedPoint.y
+                                                });
+                                            }
+                                            if (ocr_angle) {
+                                                myBoundingBox = boundingBoxRotated;
+                                            }
+                                            var width, height = null;
+                                            x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
+                                            y = Math.round((myBoundingBox[0].y + myBoundingBox[1].y) / 2);
+                                            width = Math.round((myBoundingBox[1].x - myBoundingBox[0].x + myBoundingBox[2].x - myBoundingBox[3].x) / 2);
+                                            height = Math.round((myBoundingBox[2].y - myBoundingBox[1].y + myBoundingBox[3].y - myBoundingBox[0].y) / 2);
+                                            if (importcardscanid && text) {
+                                                myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
+                                            }
+                                        }
+                                    }
                                 }
+                                var fields = result.documents[0].fields;
+                                if (fields) {
+                                    for (var fieldName in fields) {
+                                        if (fields.hasOwnProperty(fieldName) && fields[fieldName]) {
+                                            var values = fields[fieldName].values;
+                                            if (values && values[0]) {
+                                                if (values[0].value) {
+                                                    var text = values[0].value.replace(/\n/g," ");
+                                                    Log.print(Log.l.trace, fieldName + ": " + text + " (confidence: " + values[0].confidence + ")");
+                                                    myResult = myResult + fieldName + "," + text + "\n";
+                                                } else {
+                                                    var properties = values[0].properties;
+                                                    if (properties) {
+                                                        for (var propertyName in properties) {
+                                                            if (properties.hasOwnProperty(propertyName) && properties[propertyName]) {
+                                                                text = properties[propertyName].value.replace(/\n/g," ");
+                                                                Log.print(Log.l.trace, propertyName + ": " + text + " (confidence: " + values[0].confidence + ")");
+                                                                myResult = myResult + propertyName + "," + text + "\n";
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (myResult) {
+                                    myResult = myResult.replace(/\n$/, " ");
+                                }
+                            } catch (exception) {
+                                that.errorCount++;
+                                Log.print(Log.l.error,
+                                    "resource parse error " +
+                                    (exception && exception.message) +
+                                    that.successCount +
+                                    " success / " +
+                                    that.errorCount +
+                                    " errors");
+                                that.timestamp = new Date();
+                                err = {
+                                    status: 500,
+                                    statusText: "data parse error " + (exception && exception.message)
+                                };
                             }
                         }
-                    }
-                    promise._completed();
+                        promise._completed();
+                    });
+                    return WinJS.Promise.timeout(30000);
                 });
-                return WinJS.Promise.timeout(30000);
+                return promise;
+            }).then(function importCardscanBulk() {
+                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                if (!importcardscanid) {
+                    Log.ret(Log.l.trace, "no record found!");
+                    return WinJS.Promise.as();
+                }
+                if (!myResult) {
+                    Log.ret(Log.l.error, "no result found!");
+                    return WinJS.Promise.as();
+                }
+                if (!that._importCardscanBulk_ODataView) {
+                    //that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.error, "_importCardscanBulk_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                var dataImportCardscanBulk = {
+                    IMPORT_CARDSCANID: importcardscanid,
+                    OCRData: myResult
+                };
+                Log.ret(Log.l.trace);
+                return that._importCardscanBulk_ODataView.insert(function (json) {
+                    Log.print(Log.l.info, "importcardscanBulk insert: success!");
+                    if (json && json.d) {
+                        Log.print(Log.l.info, "ImportCardScanBulkVIEWID=" + json.d.ImportCardScanBulkVIEWID);
+                        cardscanbulkid = json.d.ImportCardScanBulkVIEWID;
+                    }
+                }, function (error) {
+                    that.errorCount++;
+                    Log.print(Log.l.error, "select error! " + that.successCount + " success / " + that.errorCount + " errors");
+                    that.timestamp = new Date();
+                }, dataImportCardscanBulk);
+            }).then(function selectImportCardscan() {
+                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                if (!importcardscanid) {
+                    Log.ret(Log.l.trace, "no record found!");
+                    return WinJS.Promise.as();
+                }
+                if (!dataImportCardscan) {
+                    //that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.error, "no data found! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                if (!that._importCardscan_ODataView) {
+                    //that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.error, "_importCardscan_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                Log.ret(Log.l.trace);
+                return that._importCardscan_ODataView.selectById(function (json) {
+                    Log.print(Log.l.info, "_importCardscan_ODataView select: success!");
+                    if (json) {
+                        dataImportCardscan = json.d;
+                        importcardscanid = dataImportCardscan.IMPORT_CARDSCANVIEWID;
+                    }
+                }, function (error) {
+                    that.errorCount++;
+                    Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
+                    that.timestamp = new Date();
+                }, importcardscanid);
+            }).then(function updateImportCardscan() {
+                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                if (!importcardscanid) {
+                    Log.ret(Log.l.trace, "no record found!");
+                    return WinJS.Promise.as();
+                }
+                if (!dataImportCardscan) {
+                    //that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.error, "no data found! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                if (!that._importCardscan_ODataView) {
+                    //that.errorCount++;
+                    that.timestamp = new Date();
+                    Log.ret(Log.l.error, "_importCardscan_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
+                    return WinJS.Promise.as();
+                }
+                if (cardscanbulkid) {
+                    pAktionStatus = "OCR_DONE";
+                } else {
+                    pAktionStatus = "OCR_ERROR";
+                }
+                dataImportCardscan.Button = pAktionStatus;
+                Log.ret(Log.l.trace);
+                return that._importCardscan_ODataView.update(function (json) {
+                    that.successCount++;
+                    Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
+                    that.timestamp = new Date();
+                }, function (error) {
+                    that.errorCount++;
+                    Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
+                    that.timestamp = new Date();
+                }, importcardscanid, dataImportCardscan);
             });
             Log.ret(Log.l.trace);
-            return promise;
+            return ret;
         },
 
         dispose: function () {
