@@ -26,7 +26,7 @@
             Log.call(Log.l.trace, "bcrService.");
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 2000;
+            this.waitTimeMs = 1950 + 100 * Math.random();
             this.timestamp = null;
 
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);

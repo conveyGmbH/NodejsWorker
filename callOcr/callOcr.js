@@ -20,7 +20,7 @@
             Log.call(Log.l.trace, "callOcr.");
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 1000;
+            this.waitTimeMs = 950 + 100 * Math.random();
             this.timestamp = null;
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._importCardscanView20507 = AppData.getFormatView("IMPORT_CARDSCAN", 20507, false);

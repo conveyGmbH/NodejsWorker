@@ -21,7 +21,7 @@
             Log.call(Log.l.trace, "recognizeBusinessCard.");
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 1000;
+            this.waitTimeMs = 950 + 100 * Math.random();
             this.timestamp = null;
 
             // You will need to set these environment variables or edit the following values
@@ -93,7 +93,7 @@
                         return poller.pollUntilDone();
                     }).then(function (result) {
                         var err, text;
-                        if (result && result.documents && result.documents[0]) {
+                        if (result) {
                             try {
                                 function degrees_to_radians(degrees) {
                                     var pi = Math.PI;
@@ -149,13 +149,14 @@
                                         }
                                     }
                                 }
-                                var fields = result.documents[0].fields;
+                                var fields = result.documents && result.documents[0] && result.documents[0].fields;
                                 if (fields) {
                                     for (var fieldName in fields) {
                                         if (fields.hasOwnProperty(fieldName) && fields[fieldName]) {
                                             var values = fields[fieldName].values;
                                             if (values && values[0]) {
-                                                if (values[0].value) {
+                                                if (values[0].value &&
+                                                    typeof values[0].value === "string") {
                                                     var text = values[0].value.replace(/\n/g," ");
                                                     Log.print(Log.l.trace, fieldName + ": " + text + " (confidence: " + values[0].confidence + ")");
                                                     myResult = myResult + fieldName + "," + text + "\n";
@@ -163,7 +164,10 @@
                                                     var properties = values[0].properties;
                                                     if (properties) {
                                                         for (var propertyName in properties) {
-                                                            if (properties.hasOwnProperty(propertyName) && properties[propertyName]) {
+                                                            if (properties.hasOwnProperty(propertyName) && 
+                                                                properties[propertyName] &&
+                                                                properties[propertyName].value &&
+                                                                typeof properties[propertyName].value === "string") {
                                                                 text = properties[propertyName].value.replace(/\n/g," ");
                                                                 Log.print(Log.l.trace, propertyName + ": " + text + " (confidence: " + values[0].confidence + ")");
                                                                 myResult = myResult + propertyName + "," + text + "\n";
@@ -175,26 +179,31 @@
                                         }
                                     }
                                 }
-                                if (myResult) {
+                                if (myResult &&
+                                    typeof myResult === "string") {
                                     myResult = myResult.replace(/\n$/, " ");
+                                } else {
+                                    Log.print(Log.l.error, "no result error!");
                                 }
+                                promise._completed();
                             } catch (exception) {
                                 that.errorCount++;
-                                Log.print(Log.l.error,
-                                    "resource parse error " +
-                                    (exception && exception.message) +
-                                    that.successCount +
-                                    " success / " +
-                                    that.errorCount +
-                                    " errors");
+                                Log.print(Log.l.error, "resource parse error " + (exception && exception.message) +
+                                 that.successCount + " success / " + that.errorCount + " errors");
                                 that.timestamp = new Date();
                                 err = {
                                     status: 500,
                                     statusText: "data parse error " + (exception && exception.message)
                                 };
+                                promise.cancel();
                             }
+                        } else {
+                            Log.print(Log.l.error, "no result error!");
+                            promise.cancel();
                         }
-                        promise._completed();
+                    }, function (error) {
+                        Log.print(Log.l.error, "beginAnalyzeDocument error!");
+                        promise.cancel();
                     });
                     return WinJS.Promise.timeout(30000);
                 });
@@ -295,6 +304,12 @@
                     Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, importcardscanid, dataImportCardscan);
+            }).then(function doRepeate() {
+                if (pAktionStatus === "OCR_DONE") {
+                    return that.activity();
+                } else {
+                    return WinJS.Promise.as();
+                }
             });
             Log.ret(Log.l.trace);
             return ret;

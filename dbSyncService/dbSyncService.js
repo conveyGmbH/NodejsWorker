@@ -18,7 +18,7 @@
             Log.call(Log.l.trace, "dbSyncdbSync.");
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 1000;
+            this.waitTimeMs = 950 + 100 * Math.random();
             this.timestamp = null;
             this.results = [];
             this._synchronisationsjob_odataView = AppData.getFormatView("Synchronisationsjob", 0, false);
