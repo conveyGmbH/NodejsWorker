@@ -160,6 +160,17 @@
                                                     var text = values[0].value.replace(/\n/g," ");
                                                     Log.print(Log.l.trace, fieldName + ": " + text + " (confidence: " + values[0].confidence + ")");
                                                     myResult = myResult + fieldName + "," + text + "\n";
+                                                } else if (values[0].value &&
+                                                    typeof values[0].value === "object") {
+                                                    var value = values[0].value;
+                                                    for (var valueName in value) {
+                                                        if (value.hasOwnProperty(valueName) && 
+                                                            typeof value[valueName] === "string") {
+                                                            text = value[valueName].replace(/\n/g," ");
+                                                            Log.print(Log.l.trace, valueName + ": " + text + " (confidence: " + values[0].confidence + ")");
+                                                            myResult = myResult + valueName + "," + text + "\n";
+                                                        }
+                                                    }
                                                 } else {
                                                     var properties = values[0].properties;
                                                     if (properties) {
@@ -209,7 +220,7 @@
                 });
                 return promise;
             }).then(function importCardscanBulk() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                Log.call(Log.l.trace, "recognizeBusinessCard.", "importcardscanid=" + importcardscanid);
                 if (!importcardscanid) {
                     Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
@@ -241,7 +252,7 @@
                     that.timestamp = new Date();
                 }, dataImportCardscanBulk);
             }).then(function selectImportCardscan() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                Log.call(Log.l.trace, "recognizeBusinessCard.", "importcardscanid=" + importcardscanid);
                 if (!importcardscanid) {
                     Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
@@ -271,7 +282,7 @@
                     that.timestamp = new Date();
                 }, importcardscanid);
             }).then(function updateImportCardscan() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
+                Log.call(Log.l.trace, "recognizeBusinessCard.", "importcardscanid=" + importcardscanid);
                 if (!importcardscanid) {
                     Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
