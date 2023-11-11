@@ -1,6 +1,6 @@
 ﻿/*
- * Worker roles run asynchronous, long-running, or perpetual 
- * tasks independent of user interaction or input. 
+ * Worker roles run asynchronous, long-running, or perpetual
+ * tasks independent of user interaction or input.
  */
 /// <reference path="./lib/WinJS/scripts/base.js" />
 /// <reference path="./lib/convey/scripts/strings.js" />
@@ -38,6 +38,14 @@
     include("./lib/convey/scripts/dataService.js");
     include("./lib/convey/scripts/workerService.js");
 
+    var hostName, onlinePath, login, password;
+    if (process && process.env) {
+        hostName = process.env.ODATA_HOST_NAME;
+        onlinePath = process.env.ODATA_ONLINE_PATH;
+        login = process.env.ODATA_LOGIN;
+        password = process.env.ODATA_PASSWORD;
+    }
+
     // default settings
     AppData.persistentStatesDefaults = {
         colorSettings: {
@@ -52,12 +60,12 @@
         inputBorder: 1,
         odata: {
             https: true,
-            hostName: "lstest.convey.de", //"lstest.convey.de"
-            onlinePort: 443, //443
+            hostName: hostName,
+            onlinePort: 443,
             urlSuffix: null,
-            onlinePath: "Lstest-client01odata_online",
-            login: "CloudUser",
-            password: "",
+            onlinePath: onlinePath,
+            login: login,
+            password: password,
             registerPath: "odata_register", // serviceRoot register requests
             registerLogin: "AppRegister",
             registerPassword: "6530bv6OIUed3",
