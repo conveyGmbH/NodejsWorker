@@ -100,17 +100,29 @@
     /*
     * Instanciate and the work loop object
     */
-    var workLoop = new WorkerService.WorkLoop([
-       //{ name: "selectMitarbeiter", count: 100 },
-       // "selectVeranstaltung",
-       // "selectKontakt"
-       //"xhrRequest"
-       //{ name: "callOcr", count: 5 }
-       //{ name: "bcrService", count: 5 },
-       "callOcr",
-       "bcrService",
-       "dbSyncService"
-    ], port);
+    var workerServiceOptions = [
+        //{ name: "selectMitarbeiter", count: 100 }
+        // "selectVeranstaltung",
+        // "selectKontakt"
+        //"xhrRequest"
+        //{ name: "callOcr", count: 5 },
+        //{ name: "bcrService", count: 5 },
+        //{ name: "recognizeBusinessCard", count: 2 }
+        //{ name: "bcrService", count: 2 },
+        //{ name: "dbSyncService", count: 2 },
+        { name: "callOcr", count: 2 },
+        //"callOcr",
+        //"bcrService",
+        //"dbSyncService"
+    ];
+    if (process && process.env && process.env.WORKER_SERVICE_OPTIONS) {
+        try {
+            workerServiceOptions = JSON.parse(process.env.WORKER_SERVICE_OPTIONS);
+        } catch(ex) {
+            Log.print(Log.l.info, "Exception occured! WORKER_SERVICE_OPTIONS=" + process.env.WORKER_SERVICE_OPTIONS);
+        }
+    }
+    var workLoop = new WorkerService.WorkLoop(workerServiceOptions, port);
 
     /*
     * Start the work loop object
