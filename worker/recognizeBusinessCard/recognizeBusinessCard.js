@@ -26,7 +26,10 @@
 
             // You will need to set these environment variables or edit the following values
             this.endpoint = "https://westeurope.api.cognitive.microsoft.com/";
-            this.apiKey = "eb0abaaf63d3477c95c3f6f645be1eab";
+            this.apiKey = "";
+            if (process && process.env) {
+                this.apiKey = process.env.COGNITIVE_API_KEY;
+            }
 
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._importCardscanView20507 = AppData.getFormatView("IMPORT_CARDSCAN", 20507, false);

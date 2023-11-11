@@ -8,7 +8,10 @@
 (function () {
     "use strict";
 
-    var subscriptionKey = "08566c1f8e7c49c4ab6c817b088c30e0";//"a12ee952460d409f9f66d1536dd97318";
+    var subscriptionKey = "";
+    if (process && process.env) {
+        subscriptionKey = process.env.OCR_SUBSCRIPTION_KEY;
+    }
     //var uriBase = "https://westeurope.api.cognitive.microsoft.com/vision/v3.2/read/analyze?detectOrientation=true";
     var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2023-04-01-preview&features=read";
     var UUID = require("uuid-js");
