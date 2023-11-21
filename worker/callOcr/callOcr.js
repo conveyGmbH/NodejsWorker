@@ -363,12 +363,6 @@
                     Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, importcardscanid, dataImportCardscan);
-            }).then(function doRepeate() {
-                if (pAktionStatus === "OCR_DONE") {
-                    return that.activity();
-                } else {
-                    return WinJS.Promise.as();
-                }
             });
             Log.ret(Log.l.trace);
             return ret;
