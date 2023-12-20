@@ -53,7 +53,7 @@
             accentColor: "#ff3c00"
         },
         showAppBkg: false,
-        logEnabled: true,
+        logEnabled: false,
         logLevel: 3,
         logGroup: false,
         logNoStack: true,
@@ -86,7 +86,7 @@
     Log.init({
         target: Log.targets.console,
         level: Log.l.trace,
-        group: true,
+        group: false,
         noStack: true
     });
     Log.print(Log.l.info, "V8 Version=" + process.versions.v8);
