@@ -54,17 +54,36 @@
             var pAktionStatus = "OCR_START" + this.ocrUuid; //"OCR_START" + this.ocrUuid;
             var responseText = null;
             Log.call(Log.l.trace, "callOcr.");
+            var err = null;
             var ret = AppData.call("PRC_STARTCARDOCREX", {
                 pAktionStatus: pAktionStatus
             }, function (json) {
                 Log.print(Log.l.trace, "PRC_STARTCARDOCREX success!");
-                if (json.d.results && json.d.results.length > 0) {
+                if (json && json.d && json.d.results && json.d.results.length > 0) {
                     importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
                     Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
                     docContent = json.d.results[0].DocContentDOCCNT1;
                     if (docContent) {
                         var sub = docContent.search("\r\n\r\n");
-                        options.data = b64js.toByteArray(docContent.substr(sub + 4));
+                        if (sub) {
+                            try {
+                                options.data = b64js.toByteArray(docContent.substr(sub + 4));
+                            } catch (exception) {
+                                that.errorCount++;
+                                Log.print(Log.l.error,
+                                    "resource parse error " +
+                                    (exception && exception.message) +
+                                    that.successCount +
+                                    " success / " +
+                                    that.errorCount +
+                                    " errors");
+                                that.timestamp = new Date();
+                                err = {
+                                    status: 500,
+                                    statusText: "data parse error " + (exception && exception.message)
+                                };
+                            }
+                        }
                     }
                 }
                 startOk = true;
@@ -99,7 +118,6 @@
                     that.timestamp = new Date();
                 });
             }).then(function handleResponseHeader(url) {
-                var err;
                 if (url) {
                     var optionsUrl = {
                         type: "GET",
@@ -153,7 +171,6 @@
                     return WinJS.Promise.as();
                 }
             }).then(function handleResponseText() {
-                var err;
                 if (responseText) {
                     try {
                         var myresultJson = JSON.parse(responseText);
