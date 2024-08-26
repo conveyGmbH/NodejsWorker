@@ -171,28 +171,12 @@
                 if (responseText) {
                     Log.print(Log.l.trace, "handle responseText: parsing result");
                     try {
-                        var myresultJson = JSON.parse(responseText);
-                        if (!myresultJson) {
-                            that.errorCount++;
-                            Log.print(Log.l.error,
-                                "resource parse error " +
-                                that.successCount +
-                                " success / " +
-                                that.errorCount +
-                                " errors");
-                            that.timestamp = new Date();
-                            err = {
-                                status: 500,
-                                statusText: "data parse error "
-                            };
-                            return WinJS.Promise.as();
-                        }
                         var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        function degrees_to_radians(degrees) {
+                        var degrees_to_radians = function(degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
                         };
-                        function rotatePoint(point, degrees) {
+                        var rotatePoint = function(point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
                             var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
@@ -204,7 +188,8 @@
                             }
                             return { x: qx, y: qy };
                         };
-                        if (myresultJson.status === "succeeded" &&
+                        var myresultJson = JSON.parse(responseText);
+                        if (myresultJson && myresultJson.status === "succeeded" &&
                             myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
                             Log.print(Log.l.trace, "handleResponseText: OCR Document Intelligence result!");
@@ -244,7 +229,7 @@
                                     }
                                 }
                             }
-                        } else if (myresultJson.readResult &&
+                        } else if (myresultJson && myresultJson.readResult &&
                             myresultJson.readResult.pages) {
                             Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis result!");
                             var pages = myresultJson.readResult.pages;
