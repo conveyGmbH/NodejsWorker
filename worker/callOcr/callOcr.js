@@ -13,7 +13,9 @@
         subscriptionKey = process.env.OCR_SUBSCRIPTION_KEY;
     }
     //var uriBase = "https://westeurope.api.cognitive.microsoft.com/vision/v3.2/read/analyze?detectOrientation=true";
-    var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2023-04-01-preview&features=read";
+    //var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2023-04-01-preview&features=read";
+    var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read";
+    //var uriBase = "https://westeurope.cognitiveservices.azure.com/documentintelligence/documentModels/prebuilt-layout:analyze?_overload=analyzeDocument&api-version=2024-07-31-preview";
     var UUID = require("uuid-js");
     var b64js = require("base64-js");
 
@@ -111,7 +113,9 @@
                 return WinJS.xhr(options).then(function (response) {
                     Log.print(Log.l.trace, "POST success!");
                     responseText = response && response.responseText;
-                    return response && response.getResponseHeader("Operation-Location");
+                    return response &&
+                        (typeof response.getResponseHeader === "function") &&
+                        response.getResponseHeader("Operation-Location");
                 }, function (errorResponse) {
                     that.errorCount++;
                     Log.print(Log.l.error, "error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
@@ -119,6 +123,7 @@
                 });
             }).then(function handleResponseHeader(url) {
                 if (url) {
+                    Log.print(Log.l.trace, "calling Operation-Location=" + url);
                     var optionsUrl = {
                         type: "GET",
                         url: url,
@@ -127,13 +132,15 @@
                         }
                     };
                     return WinJS.xhr(optionsUrl).then(function (response) {
-                        Log.print(Log.l.trace, "GET success!");
                         try {
                             var myresultJson = JSON.parse(response.responseText);
-                            if (myresultJson.status !== "succeeded") {
+                            if (myresultJson && myresultJson.status !== "succeeded") {
+                                Log.print(Log.l.trace, "GET status=" + myresultJson.status);
                                 return handleResponseHeader(optionsUrl.url);
                             } else {
-                                return optionsUrl.url;
+                                Log.print(Log.l.trace, "GET success!");
+                                responseText = response && response.responseText;
+                                return WinJS.Promise.as();
                             }
                         } catch (exception) {
                             that.errorCount++;
@@ -149,23 +156,8 @@
                                 status: 500,
                                 statusText: "data parse error " + (exception && exception.message)
                             };
+                            return WinJS.Promise.as();
                         }
-                    });
-                } else {
-                    return WinJS.Promise.as();
-                }
-            }).then(function handleResponseHeader(url) {
-                if (url) {
-                    var optionsUrl = {
-                        type: "GET",
-                        url: url,
-                        headers: {
-                            "Ocp-Apim-Subscription-Key": subscriptionKey
-                        }
-                    };
-                    return WinJS.xhr(optionsUrl).then(function (response) {
-                        Log.print(Log.l.trace, "GET success!");
-                        responseText = response && response.responseText;
                     });
                 } else {
                     return WinJS.Promise.as();
@@ -174,7 +166,7 @@
                 if (responseText) {
                     try {
                         var myresultJson = JSON.parse(responseText);
-                        if (!myresultJson || myresultJson.status !== "succeeded") {
+                        if (!myresultJson) {
                             that.errorCount++;
                             Log.print(Log.l.error,
                                 "resource parse error " +
@@ -207,7 +199,8 @@
                             return {x: qx, y: qy };
                         };
                         var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        if (myresultJson.analyzeResult &&
+                        if (myresultJson.status !== "succeeded" &&
+                            myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
                             var readResults = myresultJson.analyzeResult.readResults;
                             if (readResults && readResults.length > 0) {
