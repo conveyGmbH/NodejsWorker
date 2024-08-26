@@ -137,7 +137,6 @@
                     return WinJS.Promise.as();
                 }
             }).then(function handleResponseHeader(url) {
-                var err;
                 if (url) {
                     var optionsUrl = {
                         type: "GET",
@@ -154,6 +153,7 @@
                     return WinJS.Promise.as();
                 }
             }).then(function handleResponseText() {
+                var err;
                 if (responseText) {
                     try {
                         var myresultJson = JSON.parse(responseText);
