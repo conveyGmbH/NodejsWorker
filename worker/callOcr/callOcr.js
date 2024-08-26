@@ -187,11 +187,11 @@
                             };
                             return WinJS.Promise.as();
                         }
+                        var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
                         function degrees_to_radians(degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
                         };
-
                         function rotatePoint(point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
@@ -204,8 +204,7 @@
                             }
                             return { x: qx, y: qy };
                         };
-                        var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        if (myresultJson.status !== "succeeded" &&
+                        if (myresultJson.status === "succeeded" &&
                             myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
                             Log.print(Log.l.trace, "handleResponseText: OCR Document Intelligence result!");
@@ -238,7 +237,7 @@
                                             y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
                                             width = Math.round((myBoundingBox[2] - myBoundingBox[0] + myBoundingBox[4] - myBoundingBox[6]) / 2);
                                             height = Math.round((myBoundingBox[5] - myBoundingBox[3] + myBoundingBox[7] - myBoundingBox[1]) / 2);
-                                            if (importcardscanid && text) {
+                                            if (text) {
                                                 myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
                                             }
                                         }
@@ -273,13 +272,35 @@
                                     }
                                     x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                     y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
-                                    width = Math.round((myBoundingBox[2] - myBoundingBox[0] + myBoundingBox[4] - myBoundingBox[6]) / 2);
-                                    height = Math.round((myBoundingBox[5] - myBoundingBox[3] + myBoundingBox[7] - myBoundingBox[1]) / 2);
-                                    if (importcardscanid && text) {
-                                        myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
+                                    width = Math.round((myBoundingBox[2] -
+                                            myBoundingBox[0] +
+                                            myBoundingBox[4] -
+                                            myBoundingBox[6]) /
+                                        2);
+                                    height = Math.round((myBoundingBox[5] -
+                                            myBoundingBox[3] +
+                                            myBoundingBox[7] -
+                                            myBoundingBox[1]) /
+                                        2);
+                                    if (text) {
+                                        myResult = myResult +
+                                            x +
+                                            "," +
+                                            y +
+                                            "," +
+                                            width +
+                                            "," +
+                                            height +
+                                            "," +
+                                            lfHeight +
+                                            "," +
+                                            text +
+                                            "\n";
                                     }
                                 }
                             }
+                        } else {
+                            Log.print(Log.l.error, "handleResponseText: no data in OCR result!");
                         }
                         if (myResult) {
                             myResult = myResult.replace(/\n$/, " ");
