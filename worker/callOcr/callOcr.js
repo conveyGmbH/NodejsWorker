@@ -109,11 +109,10 @@
                     return WinJS.Promise.as();
                 }
                 var promise = WinJS.xhr(options).then(function (response) {
-                    Log.print(Log.l.trace, "ocrPostRequest: OCR POST success!");
                     responseText = response && response.responseText;
-                    return response &&
-                        (typeof response.getResponseHeader === "function") &&
-                        response.getResponseHeader("Operation-Location");
+                    var url =  response && response.getResponseHeader("Operation-Location");
+                    Log.print(Log.l.trace, "ocrPostRequest: OCR POST success! url=" + url);
+                    return url;
                 }, function (errorResponse) {
                     that.errorCount++;
                     Log.print(Log.l.error, "ocrPostRequest: error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
@@ -169,7 +168,7 @@
                 }
                 Log.call(Log.l.trace, "callOcr.", "importCardscanBulk: importcardscanid=" + importcardscanid);
                 if (responseText) {
-                    Log.print(Log.l.trace, "handle responseText: parsing result");
+                    Log.print(Log.l.trace, "handle responseText: responseText=" + responseText);
                     try {
                         var i, j, k, myBoundingBox, ocr_angle = 0, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
                         var degrees_to_radians = function(degrees) {
