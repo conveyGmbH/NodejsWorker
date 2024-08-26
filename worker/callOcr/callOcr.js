@@ -171,7 +171,7 @@
                 if (responseText) {
                     Log.print(Log.l.trace, "handle responseText: parsing result");
                     try {
-                        var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
+                        var i, j, k, myBoundingBox, ocr_angle = 0, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
                         var degrees_to_radians = function(degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
@@ -189,6 +189,7 @@
                             return { x: qx, y: qy };
                         };
                         var myresultJson = JSON.parse(responseText);
+                        Log.print(Log.l.trace, "handle responseText: myresultJson.status=" + (myresultJson && myresultJson.status));
                         if (myresultJson && myresultJson.status === "succeeded" &&
                             myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
