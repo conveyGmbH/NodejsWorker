@@ -174,6 +174,21 @@
                 if (responseText) {
                     try {
                         var myresultJson = JSON.parse(responseText);
+                        if (!myresultJson || myresultJson.status !== "succeeded") {
+                            that.errorCount++;
+                            Log.print(Log.l.error,
+                                "resource parse error " +
+                                that.successCount +
+                                " success / " +
+                                that.errorCount +
+                                " errors");
+                            that.timestamp = new Date();
+                            err = {
+                                status: 500,
+                                statusText: "data parse error "
+                            };
+                            return WinJS.Promise.as();
+                        }
                         function degrees_to_radians(degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
@@ -192,9 +207,7 @@
                             return {x: qx, y: qy };
                         };
                         var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        if (myresultJson &&
-                            myresultJson.status === "succeeded" &&
-                            myresultJson.analyzeResult &&
+                        if (myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
                             var readResults = myresultJson.analyzeResult.readResults;
                             if (readResults && readResults.length > 0) {
