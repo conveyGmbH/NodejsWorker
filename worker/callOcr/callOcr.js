@@ -94,13 +94,12 @@
                 Log.print(Log.l.error, "PRC_STARTCARDOCREX error! " + that.successCount + " success / " + that.errorCount + " errors");
                 that.timestamp = new Date();
             }).then(function ocrPostRequest() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid + " pAktionStatus=" + pAktionStatus);
-                if (!startOk) {
-                    Log.ret(Log.l.trace, "PRC_STARTCARDOCREX failed!");
+                if (!importcardscanid) {
                     return WinJS.Promise.as();
                 }
-                if (!importcardscanid) {
-                    Log.ret(Log.l.trace, "no record found!");
+                Log.call(Log.l.trace, "callOcr.", "ocrPostRequest: importcardscanid=" + importcardscanid + " pAktionStatus=" + pAktionStatus);
+                if (!startOk) {
+                    Log.ret(Log.l.trace, "PRC_STARTCARDOCREX failed!");
                     return WinJS.Promise.as();
                 }
                 if (!options.data) {
@@ -109,61 +108,68 @@
                     Log.ret(Log.l.trace, "no data returned! " + that.successCount + " success / " + that.errorCount + " errors");
                     return WinJS.Promise.as();
                 }
-                Log.ret(Log.l.trace);
-                return WinJS.xhr(options).then(function (response) {
-                    Log.print(Log.l.trace, "POST success!");
+                var promise = WinJS.xhr(options).then(function (response) {
+                    Log.print(Log.l.trace, "ocrPostRequest: OCR POST success!");
                     responseText = response && response.responseText;
                     return response &&
                         (typeof response.getResponseHeader === "function") &&
                         response.getResponseHeader("Operation-Location");
                 }, function (errorResponse) {
                     that.errorCount++;
-                    Log.print(Log.l.error, "error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
+                    Log.print(Log.l.error, "ocrPostRequest: error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
                     that.timestamp = new Date();
                 });
+                Log.ret(Log.l.trace);
+                return promise;
             }).then(function handleResponseHeader(url) {
-                if (url) {
-                    Log.print(Log.l.trace, "calling Operation-Location=" + url);
-                    var optionsUrl = {
-                        type: "GET",
-                        url: url,
-                        headers: {
-                            "Ocp-Apim-Subscription-Key": subscriptionKey
-                        }
-                    };
-                    return WinJS.xhr(optionsUrl).then(function (response) {
-                        try {
-                            var myresultJson = JSON.parse(response.responseText);
-                            if (myresultJson && myresultJson.status !== "succeeded") {
-                                Log.print(Log.l.trace, "GET status=" + myresultJson.status);
-                                return handleResponseHeader(optionsUrl.url);
-                            } else {
-                                Log.print(Log.l.trace, "GET success!");
-                                responseText = response && response.responseText;
-                                return WinJS.Promise.as();
-                            }
-                        } catch (exception) {
-                            that.errorCount++;
-                            Log.print(Log.l.error,
-                                "resource parse error " +
-                                (exception && exception.message) +
-                                that.successCount +
-                                " success / " +
-                                that.errorCount +
-                                " errors");
-                            that.timestamp = new Date();
-                            err = {
-                                status: 500,
-                                statusText: "data parse error " + (exception && exception.message)
-                            };
-                            return WinJS.Promise.as();
-                        }
-                    });
-                } else {
+                if (!url) {
                     return WinJS.Promise.as();
                 }
-            }).then(function handleResponseText() {
+                Log.call(Log.l.trace, "callOcr.", "handleResponseHeader: calling OCR Operation-Location=" + url);
+                var optionsUrl = {
+                    type: "GET",
+                    url: url,
+                    headers: {
+                        "Ocp-Apim-Subscription-Key": subscriptionKey
+                    }
+                };
+                var promise =  WinJS.xhr(optionsUrl).then(function (response) {
+                    try {
+                        var myresultJson = JSON.parse(response.responseText);
+                        if (myresultJson && myresultJson.status !== "succeeded") {
+                            Log.print(Log.l.trace, "OCR GET status=" + myresultJson.status);
+                            return handleResponseHeader(optionsUrl.url);
+                        } else {
+                            Log.print(Log.l.trace, "OCR GET success!");
+                            responseText = response && response.responseText;
+                            return WinJS.Promise.as();
+                        }
+                    } catch (exception) {
+                        that.errorCount++;
+                        Log.print(Log.l.error,
+                            "resource parse error " +
+                            (exception && exception.message) +
+                            that.successCount +
+                            " success / " +
+                            that.errorCount +
+                            " errors");
+                        that.timestamp = new Date();
+                        err = {
+                            status: 500,
+                            statusText: "data parse error " + (exception && exception.message)
+                        };
+                        return WinJS.Promise.as();
+                    }
+                });
+                Log.ret(Log.l.trace);
+                return promise;
+            }).then(function importCardscanBulk() {
+                if (!importcardscanid) {
+                    return WinJS.Promise.as();
+                }
+                Log.call(Log.l.trace, "callOcr.", "importCardscanBulk: importcardscanid=" + importcardscanid);
                 if (responseText) {
+                    Log.print(Log.l.trace, "handle responseText: parsing result");
                     try {
                         var myresultJson = JSON.parse(responseText);
                         if (!myresultJson) {
@@ -189,19 +195,20 @@
                         function rotatePoint(point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
-                            var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians) ;
+                            var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
 
                             var qx = cos_rad * point.x - sin_rad * point.y;
                             var qy = sin_rad * point.x + cos_rad * point.y;
                             if (ocr_angle < 0) {
                                 qy = -qy;
                             }
-                            return {x: qx, y: qy };
+                            return { x: qx, y: qy };
                         };
                         var i, j, k, myBoundingBox, ocr_angle, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
                         if (myresultJson.status !== "succeeded" &&
                             myresultJson.analyzeResult &&
                             myresultJson.analyzeResult.readResults) {
+                            Log.print(Log.l.trace, "handleResponseText: OCR Document Intelligence result!");
                             var readResults = myresultJson.analyzeResult.readResults;
                             if (readResults && readResults.length > 0) {
                                 for (i = 0; i < readResults.length; i++) {
@@ -217,7 +224,7 @@
                                                 y = parseInt(myBoundingBox[l + 1]);
                                                 rotatedPoint = null;
                                                 if (ocr_angle < 0) {
-                                                    rotatedPoint = rotatePoint({x: x, y: -y}, ocr_angle);
+                                                    rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
                                                 } else {
                                                     rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
                                                 }
@@ -239,7 +246,8 @@
                                 }
                             }
                         } else if (myresultJson.readResult &&
-                                   myresultJson.readResult.pages) {
+                            myresultJson.readResult.pages) {
+                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis result!");
                             var pages = myresultJson.readResult.pages;
                             for (i = 0; i < pages.length; i++) {
                                 for (k = 0; k < pages[i].words.length; k++) {
@@ -253,7 +261,7 @@
                                         y = parseInt(myBoundingBox[l + 1]);
                                         rotatedPoint = null;
                                         if (ocr_angle < 0) {
-                                            rotatedPoint = rotatePoint({x: x, y: -y}, ocr_angle);
+                                            rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
                                         } else {
                                             rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
                                         }
@@ -291,14 +299,6 @@
                             statusText: "data parse error " + (exception && exception.message)
                         };
                     }
-
-                }
-                return WinJS.Promise.as();
-            }).then(function importCardscanBulk() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
-                if (!importcardscanid) {
-                    Log.ret(Log.l.trace, "no record found!");
-                    return WinJS.Promise.as();
                 }
                 if (!myResult) {
                     Log.ret(Log.l.error, "no result found!");
@@ -314,46 +314,47 @@
                     IMPORT_CARDSCANID: importcardscanid,
                     OCRData: myResult
                 };
-                Log.ret(Log.l.trace);
-                return that._importCardscanBulk_ODataView.insert(function (json) {
-                    Log.print(Log.l.info, "importcardscanBulk insert: success!");
+                var promise = that._importCardscanBulk_ODataView.insert(function (json) {
+                    Log.print(Log.l.info, "importcardscanBulk: insert success!");
                     if (json && json.d) {
-                        Log.print(Log.l.info, "ImportCardScanBulkVIEWID=" + json.d.ImportCardScanBulkVIEWID);
+                        Log.print(Log.l.info, "importcardscanBulk: cardscanbulkid=" + json.d.ImportCardScanBulkVIEWID);
                         cardscanbulkid = json.d.ImportCardScanBulkVIEWID;
                     }
                 }, function (error) {
                     that.errorCount++;
-                    Log.print(Log.l.error, "select error! " + that.successCount + " success / " + that.errorCount + " errors");
+                    Log.print(Log.l.error, "importcardscanBulk: insert error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, dataImportCardscanBulk);
+                Log.ret(Log.l.trace);
+                return promise;
             }).then(function selectImportCardscan() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
                 if (!importcardscanid) {
-                    Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
                 }
+                Log.call(Log.l.trace, "callOcr.", "selectImportCardscan: importcardscanid=" + importcardscanid);
                 if (!that._importCardscan_ODataView) {
                     that.errorCount++;
                     that.timestamp = new Date();
                     Log.ret(Log.l.error, "_importCardscan_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
                     return WinJS.Promise.as();
                 }
-                Log.ret(Log.l.trace);
-                return that._importCardscan_ODataView.selectById(function (json) {
+                var promise = that._importCardscan_ODataView.selectById(function (json) {
+                    Log.print(Log.l.info, "selectImportCardscan: select success!");
                     if (json && json.d) {
                         dataImportCardscan = json.d;
                     }
                 }, function (error) {
                     that.errorCount++;
-                    Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
+                    Log.print(Log.l.error, "selectImportCardscan: _importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, importcardscanid);
+                Log.ret(Log.l.trace);
+                return promise;
             }).then(function updateImportCardscan() {
-                Log.call(Log.l.trace, "callOcr.", "importcardscanid=" + importcardscanid);
                 if (!importcardscanid) {
-                    Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
                 }
+                Log.call(Log.l.trace, "callOcr.", "updateImportCardscan: importcardscanid=" + importcardscanid);
                 if (!dataImportCardscan) {
                     //that.errorCount++;
                     that.timestamp = new Date();
@@ -366,14 +367,16 @@
                     Log.ret(Log.l.error, "_importCardscan_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
                     return WinJS.Promise.as();
                 }
+                Log.print(Log.l.trace, "updateImportCardscan: cardscanbulkid=" + cardscanbulkid);
                 if (cardscanbulkid) {
+                    Log.print(Log.l.trace, "updateImportCardscan: OCR_DONE");
                     pAktionStatus = "OCR_DONE";
                 } else {
+                    Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
                 }
                 dataImportCardscan.Button = pAktionStatus;
-                Log.ret(Log.l.trace);
-                return that._importCardscan_ODataView.update(function (json) {
+                var promise = that._importCardscan_ODataView.update(function (json) {
                     that.successCount++;
                     Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
@@ -382,6 +385,8 @@
                     Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, importcardscanid, dataImportCardscan);
+                Log.ret(Log.l.trace);
+                return promise;
             });
             Log.ret(Log.l.trace);
             return ret;
