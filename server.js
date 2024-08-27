@@ -118,7 +118,9 @@
         target: Log.targets.console,
         level: (logLevel===undefined?Log.l.trace:logLevel),
         group: false,
-        noStack: true
+		// Ted 20240827: Was soll es bringen das auf true zu setzen? Es bringt auf jeden Fall den Call-Stack von Logging
+		//               durcheinander wenn das Log.call und das Log.ret unterschiedliche Debug-Levels verwenden.
+        noStack: false 
     });
     Log.print(Log.l.info, "V8 Version=" + process.versions.v8);
 

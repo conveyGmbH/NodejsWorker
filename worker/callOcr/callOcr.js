@@ -26,6 +26,9 @@
             Log.call(Log.l.trace, "callOcr.");
             this.successCount = 0;
             this.errorCount = 0;
+            this.lastJob = null;
+            this.lastImportcardscanid = 0;
+            this.lastAction = null;
             this.waitTimeMs = 950 + 100 * Math.random();
             this.timestamp = null;
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
@@ -57,12 +60,15 @@
             var responseText = null;
             Log.call(Log.l.trace, "callOcr.");
             var err = null;
+            that.lastAction = 'PRC_STARTCARDOCREX';
             var ret = AppData.call("PRC_STARTCARDOCREX", {
                 pAktionStatus: pAktionStatus
             }, function (json) {
                 Log.print(Log.l.trace, "PRC_STARTCARDOCREX success!");
                 if (json && json.d && json.d.results && json.d.results.length > 0) {
+                    that.lastJob = new Date();
                     importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
+                    that.lastImportcardscanid = importcardscanid;
                     Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
                     docContent = json.d.results[0].DocContentDOCCNT1;
                     if (docContent) {
@@ -91,6 +97,7 @@
                 startOk = true;
             }, function (error) {
                 that.errorCount++;
+                that.lastImportcardscanid = 0;
                 Log.print(Log.l.error, "PRC_STARTCARDOCREX error! " + that.successCount + " success / " + that.errorCount + " errors");
                 that.timestamp = new Date();
             }).then(function ocrPostRequest() {
@@ -108,6 +115,7 @@
                     Log.ret(Log.l.trace, "no data returned! " + that.successCount + " success / " + that.errorCount + " errors");
                     return WinJS.Promise.as();
                 }
+                that.lastAction = 'ocrPostRequest';
                 var promise = WinJS.xhr(options).then(function (response) {
                     responseText = response && response.responseText;
                     var url =  response && response.getResponseHeader("Operation-Location");
@@ -132,6 +140,7 @@
                         "Ocp-Apim-Subscription-Key": subscriptionKey
                     }
                 };
+                that.lastAction = 'handleResponseHeader';
                 var promise =  WinJS.xhr(optionsUrl).then(function (response) {
                     try {
                         var myresultJson = JSON.parse(response.responseText);
@@ -320,6 +329,7 @@
                     IMPORT_CARDSCANID: importcardscanid,
                     OCRData: myResult
                 };
+                that.lastAction = 'importcardscanBulk';
                 var promise = that._importCardscanBulk_ODataView.insert(function (json) {
                     Log.print(Log.l.info, "importcardscanBulk: insert success!");
                     if (json && json.d) {
@@ -344,6 +354,7 @@
                     Log.ret(Log.l.error, "_importCardscan_ODataView not initialized! " + that.successCount + " success / " + that.errorCount + " errors");
                     return WinJS.Promise.as();
                 }
+                that.lastAction = 'selectImportCardscan';
                 var promise = that._importCardscan_ODataView.selectById(function (json) {
                     Log.print(Log.l.info, "selectImportCardscan: select success!");
                     if (json && json.d) {
@@ -382,6 +393,7 @@
                     pAktionStatus = "OCR_ERROR";
                 }
                 dataImportCardscan.Button = pAktionStatus;
+                that.lastAction = 'updateImportCardscan';
                 var promise = that._importCardscan_ODataView.update(function (json) {
                     that.successCount++;
                     Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
@@ -408,8 +420,15 @@
         info: function () {
             Log.call(Log.l.trace, "callOcr.");
             var infoText = this.successCount + " success / " + this.errorCount + " errors";
+            infoText += "\nlast action: "+this.lastAction;
+            infoText += "\nlatest job start: ";
+            if (this.lastJob) {
+            	infoText += this.lastJob.toISOString() + ", ImportCardScanID "+this.lastImportcardscanid;
+            } else {
+            	infoText += 'never';
+            }
             if (this.timestamp) {
-                infoText += "\n" + this.timestamp.toLocaleTimeString();
+                infoText += "\nlatest status change: " + this.timestamp.toISOString();
             }
             if (this.results) {
                 for (var i = 0; i < this.results.length; i++) {
