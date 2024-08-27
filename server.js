@@ -39,11 +39,42 @@
     include("./lib/convey/scripts/workerService.js");
 
     var hostName, onlinePath, login, password;
+	var logLevel;
     if (process && process.env) {
         hostName = process.env.ODATA_HOST_NAME;
         onlinePath = process.env.ODATA_ONLINE_PATH;
         login = process.env.ODATA_LOGIN;
         password = process.env.ODATA_PASSWORD;
+		switch(process.env.DEBUGLEVEL) {
+			case '0':
+			case 'none':
+				logLevel = Log.l.none;
+				break;
+			case '1':
+			case 'error':
+				logLevel = Log.l.error;
+				break;
+			case '2':
+			case 'warnings':
+				logLevel = Log.l.warn;
+				break;
+			case '3':
+			case 'info':
+				logLevel = Log.l.info;
+				break;
+			case '4':
+			case 'trace':
+				logLevel = Log.l.trace;
+				break;
+			case '5':
+			case 'user1':
+				logLevel = Log.l.u1;
+				break;
+			case '6':
+			case 'user2':
+				logLevel = Log.l.u2;
+				break;
+		}
     }
 
     // default settings
@@ -85,7 +116,7 @@
 
     Log.init({
         target: Log.targets.console,
-        level: Log.l.trace,
+        level: (logLevel===undefined?Log.l.trace:logLevel),
         group: false,
         noStack: true
     });
