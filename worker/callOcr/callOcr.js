@@ -405,6 +405,19 @@
                 }, importcardscanid, dataImportCardscan);
                 Log.ret(Log.l.trace);
                 return promise;
+            }).then(function doRepeate() {
+                if (!importcardscanid) {
+                    return WinJS.Promise.as();
+                }
+                Log.call(Log.l.trace, "callOcr.", "doRepeate: pAktionStatus=" + pAktionStatus);
+                var promise;
+                if (pAktionStatus === "OCR_DONE") {
+                    promise = that.activity();
+                } else {
+                    promise = WinJS.Promise.as();
+                }
+                Log.ret(Log.l.trace);
+                return promise;
             });
             Log.ret(Log.l.trace);
             return ret;
