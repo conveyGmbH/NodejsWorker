@@ -44,6 +44,13 @@
                 type: "POST",
                 url: uriBase,
                 data: null,
+                customRequestInitializer: function (req) {
+                    req.timeout = 60000;
+                    req.ontimeout = function () {
+                        Log.print(Log.l.error, "request timeout!");
+                        req.abort();
+                    };
+                },
                 headers: {
                     "Content-Type": "application/octet-stream",
                     "Ocp-Apim-Subscription-Key": subscriptionKey
