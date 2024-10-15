@@ -394,7 +394,7 @@
                     return WinJS.Promise.as();
                 }
                 Log.print(Log.l.trace, "updateImportCardscan: cardscanbulkid=" + cardscanbulkid);
-                if (!myResult || !bulkError) {
+                if (!myResult || bulkError) {
                     Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
                     dataImportCardscan.Button = pAktionStatus;
