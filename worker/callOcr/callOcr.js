@@ -126,7 +126,7 @@
                 that.lastAction = 'ocrPostRequest';
                 var promise = WinJS.xhr(options).then(function (response) {
                     responseText = response && response.responseText;
-                    var url =  response && response.getResponseHeader("Operation-Location");
+                    var url = response && response.getResponseHeader("Operation-Location");
                     Log.print(Log.l.trace, "ocrPostRequest: OCR POST success! url=" + url);
                     return url;
                 }, function (errorResponse) {
@@ -149,7 +149,7 @@
                     }
                 };
                 that.lastAction = 'handleResponseHeader';
-                var promise =  WinJS.xhr(optionsUrl).then(function (response) {
+                var promise = WinJS.xhr(optionsUrl).then(function (response) {
                     try {
                         var myresultJson = JSON.parse(response.responseText);
                         if (myresultJson && myresultJson.status !== "succeeded") {
@@ -188,11 +188,11 @@
                     Log.print(Log.l.trace, "handle responseText: responseText=" + responseText);
                     try {
                         var i, j, k, myBoundingBox, ocr_angle = 0, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        var degrees_to_radians = function(degrees) {
+                        var degrees_to_radians = function (degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
                         };
-                        var rotatePoint = function(point, degrees) {
+                        var rotatePoint = function (point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
                             var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
@@ -275,14 +275,14 @@
                                     x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                     y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
                                     width = Math.round((myBoundingBox[2] -
-                                            myBoundingBox[0] +
-                                            myBoundingBox[4] -
-                                            myBoundingBox[6]) /
+                                        myBoundingBox[0] +
+                                        myBoundingBox[4] -
+                                        myBoundingBox[6]) /
                                         2);
                                     height = Math.round((myBoundingBox[5] -
-                                            myBoundingBox[3] +
-                                            myBoundingBox[7] -
-                                            myBoundingBox[1]) /
+                                        myBoundingBox[3] +
+                                        myBoundingBox[7] -
+                                        myBoundingBox[1]) /
                                         2);
                                     if (text) {
                                         myResult = myResult +
@@ -346,7 +346,7 @@
                     }
                 }, function (error) {
                     that.errorCount++;
-                    bulkError = true; 
+                    bulkError = true;
                     Log.print(Log.l.error, "importcardscanBulk: insert error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, dataImportCardscanBulk);
@@ -399,31 +399,21 @@
                     pAktionStatus = "OCR_ERROR";
                     dataImportCardscan.Button = pAktionStatus;
                     that.lastAction = 'updateImportCardscan';
-                    var promise = that._importCardscan_ODataView.update(function(json) {
-                            that.successCount++;
-                            Log.print(Log.l.info,
-                                "_importCardscan_ODataView update: success! " +
-                                that.successCount +
-                                " success / " +
-                                that.errorCount +
-                                " errors");
-                            that.timestamp = new Date();
-                        },
-                        function(error) {
-                            that.errorCount++;
-                            Log.print(Log.l.error,
-                                "_importCardscan_ODataView error! " +
-                                that.successCount +
-                                " success / " +
-                                that.errorCount +
-                                " errors");
-                            that.timestamp = new Date();
-                        },
-                        importcardscanid,
-                        dataImportCardscan);
+                    var promise = that._importCardscan_ODataView.update(function (json) {
+                        that.errorCount++;
+                        Log.print(Log.l.info, "_importCardscan_ODataView update OCR_ERROR: success! " + that.successCount + " success / " + that.errorCount + " errors");
+                        that.timestamp = new Date();
+                    }, function (error) {
+                        that.errorCount++;
+                        Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
+                        that.timestamp = new Date();
+                    }, importcardscanid, dataImportCardscan);
                     Log.ret(Log.l.trace);
                     return promise;
                 } else {
+                    that.successCount++;
+                    Log.print(Log.l.info, "success! " + that.successCount + " success / " + that.errorCount + " errors");
+                    that.timestamp = new Date();
                     Log.ret(Log.l.trace);
                     return WinJS.promise.as();
                 }
@@ -455,12 +445,12 @@
         info: function () {
             Log.call(Log.l.trace, "callOcr.");
             var infoText = this.successCount + " success / " + this.errorCount + " errors";
-            infoText += "\nlast action: "+this.lastAction;
+            infoText += "\nlast action: " + this.lastAction;
             infoText += "\nlatest job start: ";
             if (this.lastJob) {
-            	infoText += this.lastJob.toISOString() + ", ImportCardScanID "+this.lastImportcardscanid;
+                infoText += this.lastJob.toISOString() + ", ImportCardScanID " + this.lastImportcardscanid;
             } else {
-            	infoText += 'never';
+                infoText += 'never';
             }
             if (this.timestamp) {
                 infoText += "\nlatest status change: " + this.timestamp.toISOString();
