@@ -58,6 +58,7 @@
             };
             var startOk = false;
             var myResult = "";
+            var bulkError = false;
             var importcardscanid = 0;
             var docContent = null;
             var cardscanbulkid = 0;
@@ -345,6 +346,7 @@
                     }
                 }, function (error) {
                     that.errorCount++;
+                    bulkError = true; 
                     Log.print(Log.l.error, "importcardscanBulk: insert error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
                 }, dataImportCardscanBulk);
@@ -392,33 +394,46 @@
                     return WinJS.Promise.as();
                 }
                 Log.print(Log.l.trace, "updateImportCardscan: cardscanbulkid=" + cardscanbulkid);
-                if (cardscanbulkid) {
-                    Log.print(Log.l.trace, "updateImportCardscan: OCR_DONE");
-                    pAktionStatus = "OCR_DONE";
-                } else {
+                if (!myResult || !bulkError) {
                     Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
+                    dataImportCardscan.Button = pAktionStatus;
+                    that.lastAction = 'updateImportCardscan';
+                    var promise = that._importCardscan_ODataView.update(function(json) {
+                            that.successCount++;
+                            Log.print(Log.l.info,
+                                "_importCardscan_ODataView update: success! " +
+                                that.successCount +
+                                " success / " +
+                                that.errorCount +
+                                " errors");
+                            that.timestamp = new Date();
+                        },
+                        function(error) {
+                            that.errorCount++;
+                            Log.print(Log.l.error,
+                                "_importCardscan_ODataView error! " +
+                                that.successCount +
+                                " success / " +
+                                that.errorCount +
+                                " errors");
+                            that.timestamp = new Date();
+                        },
+                        importcardscanid,
+                        dataImportCardscan);
+                    Log.ret(Log.l.trace);
+                    return promise;
+                } else {
+                    Log.ret(Log.l.trace);
+                    return WinJS.promise.as();
                 }
-                dataImportCardscan.Button = pAktionStatus;
-                that.lastAction = 'updateImportCardscan';
-                var promise = that._importCardscan_ODataView.update(function (json) {
-                    that.successCount++;
-                    Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
-                    that.timestamp = new Date();
-                }, function (error) {
-                    that.errorCount++;
-                    Log.print(Log.l.error, "_importCardscan_ODataView error! " + that.successCount + " success / " + that.errorCount + " errors");
-                    that.timestamp = new Date();
-                }, importcardscanid, dataImportCardscan);
-                Log.ret(Log.l.trace);
-                return promise;
             }).then(function doRepeate() {
                 if (!importcardscanid) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "doRepeate: pAktionStatus=" + pAktionStatus);
                 var promise;
-                if (pAktionStatus === "OCR_DONE") {
+                if (myResult) {
                     promise = that.activity();
                 } else {
                     promise = WinJS.Promise.as();
