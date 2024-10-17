@@ -22,23 +22,24 @@
     //decipher.setAutoPadding(false);
 
     var dispatcher = {
+
         startup: function () {
             Log.call(Log.l.trace, "bcrService.");
             this.successCount = 0;
             this.errorCount = 0;
-            this.waitTimeMs = 1950 + 100 * Math.random();
+            this.lastJob = null;
+            this.lastImportcardscanid = 0;
+            this.lastAction = null;
+            this.waitTimeMs = 950 + 100 * Math.random();
             this.timestamp = null;
-
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._importBarcodeScan_ODataView = AppData.getFormatView("ImportBarcodeScan", 0, false);
-
             this.results = [];
             var uuid = UUID.create();
             this.bcrUuid = uuid.toString();
             Log.ret(Log.l.trace);
             return WinJS.Promise.as();
         },
-
         activity: function () {
             var startOk = false;
             var finishedOk = false;
@@ -79,16 +80,16 @@
             var dataImportCardscan = {};
             var dataImportCardscanVcard = null;
             var that = this;
-            var pAktionStatus = "VCARD_START" + this.bcrUuid; //"bcr_START" + this.bcrUuid;
-
-            var ret = AppData.call("PRC_STARTVCARD",
-                {
+            var pAktionStatus = "VCARD_START" + this.bcrUuid; //"bcr_START" + this.bcrUuid
+            that.lastAction = 'PRC_STARTVCARD';
+            var ret = AppData.call("PRC_STARTVCARD", {
                     pAktionStatus: pAktionStatus
-                },
-                function (json) {
+                }, function (json) {
                     Log.print(Log.l.trace, "PRC_STARTVCARD success!");
                     if (json && json.d && json.d.results && json.d.results.length > 0) {
+                        that.lastJob = new Date();
                         importcardscanid = json.d.results[0].Import_CARDSCANVIEWID;
+                        that.lastImportcardscanid = importcardscanid;
                         kontaktID = json.d.results[0].KontaktID;
                         Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
                         var barcode2Result = json.d.results[0].Barcode2;
@@ -100,66 +101,19 @@
                         }
                     }
                     startOk = true;
-                },
-                function (error) {
+                }, function (error) {
                     that.errorCount++;
+                    that.lastImportcardscanid = 0;
                     Log.print(Log.l.error,
                         "PRC_STARTVCARD error! " + that.successCount + " success / " + that.errorCount + " errors");
                     that.timestamp = new Date();
-                })/*.then(function selectimportCardscanODataView() {
-                    Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus);
-                    if (!startOk) {
-                        Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
-                        return WinJS.Promise.as();
-                    }
-                    if (!that._importCardscan_ODataView) {
-                        that.errorCount++;
-                        that.timestamp = new Date();
-                        Log.ret(Log.l.error,
-                            "_importCardscan_ODataView not initialized! " +
-                            that.successCount +
-                            " success / " +
-                            that.errorCount +
-                            " errors");
-                        return WinJS.Promise.as();
-                    }
-                    Log.ret(Log.l.trace);
-                    return that._importCardscan_ODataView.select(function (json) {
-                        Log.print(Log.l.trace, "importCardscan_ODataView: success!");
-                        if (json && json.d && json.d.results && json.d.results.length > 0) {
-                            importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
-                            Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
-                            var barcode2Result = json.d.results[0].Barcode2;
-                            dataImportCardscanVcard = json.d.results[0];
-                            if (barcode2Result) {
-                                myResult = barcode2Result;
-                                //isValidBase64String = myResult.search("/^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/");
-                                //Log.print(Log.l.trace, "isValidBase64String: " + isValidBase64String);
-                            }
-                        }
-
-                        return WinJS.Promise.as();
-                    },
-                        function (error) {
-                            Log.print(Log.l.error, "select error=" + AppData.getErrorMsgFromResponse(error));
-                            that.errorCount++;
-                            Log.print(Log.l.error,
-                                "select error! " + that.successCount + " success / " + that.errorCount + " errors");
-                            that.timestamp = new Date();
-                        },
-                        {
-                            Button: pAktionStatus
-                        });
-                })*/.then(function () {
+                }).then(function decryptToVCARD() {
                     Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult= " + myResult);
                     if (!startOk) {
                         Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
                         return WinJS.Promise.as();
                     }
-                    /*if (!myResult) {
-                        Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
-                        return WinJS.Promise.as();
-                    }*/
+                    that.lastAction = 'decryptToVCARD';
                     if (myResult.substr(0, "#LSAD01".length) === "#LSAD01") {
                         myResult = myResult.substring(7);
                         //console.log(myResult);
@@ -207,6 +161,7 @@
                         Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                         return WinJS.Promise.as();
                     }*/
+                    that.lastAction = 'unzipResult';
                     Log.call(Log.l.trace, "callBcr.", "dataVCard=" + dataVCard);
                     if (myResult && myResult.substr(0, "#LSAD00".length) === "#LSAD00") {
                         myResult = myResult.substring(7);
@@ -248,6 +203,7 @@
                     return WinJS.Promise.as();
                 }).then(function updateImportCardscan() {
                     Log.call(Log.l.trace, "callBcr.", "dataVCard=" + dataVCard);
+                    that.lastAction = 'updateImportCardscan';
                     var card = null;
                     //dataVCard = "BEGIN:VCARD\nVERSION:4.0\nN:Mustermann;Erika;;Dr.;\nFN:Dr. Erika Mustermann\nORG:Wikimedia\nROLE:Kommunikation\nTITLE:Redaktion &amp; Gestaltung\nPHOTO;MEDIATYPE=image/jpeg:http://commons.wikimedia.org/wiki/File:Erika_Mustermann_2010.jpg\nTEL;TYPE=work,voice;VALUE=uri:tel:+49-221-9999123\nTEL;TYPE=home,voice;VALUE=uri:tel:+49-221-1234567\nADR;TYPE=home;LABEL=" + "Heidestraße 17\n51147 Köln\nDeutschland" + "\n :;;Heidestraße 17;Köln;;51147;Germany\nEMAIL:erika@mustermann.de\nREV:20140301T221110Z\nEND:VCARD";
                     if (dataVCard)
@@ -465,15 +421,22 @@
         info: function () {
             Log.call(Log.l.trace, "bcrService.");
             var infoText = this.successCount + " success / " + this.errorCount + " errors";
+            infoText += "\nlast action: " + this.lastAction;
+            infoText += "\nlatest job start: ";
+            if (this.lastJob) {
+                infoText += this.lastJob.toISOString() + ", ImportCardScanID " + this.lastImportcardscanid;
+            } else {
+                infoText += 'never';
+            }
             if (this.timestamp) {
-                infoText += "\n" + this.timestamp.toLocaleTimeString();
+                infoText += "\nlatest status change: " + this.timestamp.toISOString();
             }
             if (this.results) {
                 for (var i = 0; i < this.results.length; i++) {
                     infoText += "\n" + "[" + i + "]: " + this.results[i];
                 }
             }
-            Log.ret(Log.l.trace);
+            Log.ret(Log.l.trace, infoText);
             return infoText;
         }
     };
