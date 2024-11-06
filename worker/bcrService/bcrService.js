@@ -1,4 +1,4 @@
-﻿/// <reference path="../../lib/WinJS/scripts/base.js" />
+﻿﻿/// <reference path="../../lib/WinJS/scripts/base.js" />
 /// <reference path="../../lib/convey/scripts/strings.js" />
 /// <reference path="../../lib/convey/scripts/logging.js" />
 /// <reference path="../../lib/convey/scripts/appSettings.js" />
@@ -87,7 +87,7 @@
                 Log.print(Log.l.trace, "PRC_STARTVCARD success!");
                 if (json && json.d && json.d.results && json.d.results.length > 0) {
                     that.lastJob = new Date();
-                    importcardscanid = json.d.results[0].Import_CARDSCANVIEWID;
+                    importcardscanid = json.d.results[0].IMPORT_CARDSCANVIEWID;
                     that.lastImportcardscanid = importcardscanid;
                     kontaktID = json.d.results[0].KontaktID;
                     Log.print(Log.l.trace, "importcardscanid=" + importcardscanid);
@@ -108,6 +108,10 @@
                 Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult= " + myResult);
                 if (!startOk) {
                     Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
+                    return WinJS.Promise.as();
+                }
+                if (!myResult) {
+                    Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                     return WinJS.Promise.as();
                 }
                 that.lastAction = 'decryptToVCARD';
@@ -154,10 +158,10 @@
                 return WinJS.Promise.as();
             }).then(function unzipResult() {
                 Log.call(Log.l.trace, "bcrService.", "myResult=" + myResult + " dataVCard=" + dataVCard);
-                /*if (!myResult) {
+                if (!myResult) {
                     Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                     return WinJS.Promise.as();
-                }*/
+                }
                 if (myResult && myResult.substr(0, "#LSAD00".length) === "#LSAD00") {
                     that.lastAction = 'unzipResult';
                     myResult = myResult.substring(7);
@@ -349,7 +353,7 @@
                     dataImportCardscanVcard.WEBSITE = url;
                     if (anrede)
                         dataImportCardscanVcard.INITAnredeID = anrede;
-
+                    // TODO Behandlung der INITLandID fehlt noch
                     return that._importCardscan_ODataView.update(function (json) {
                         that.successCount++;
                         Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
