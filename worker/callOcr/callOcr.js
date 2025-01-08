@@ -270,7 +270,7 @@
                                     Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length);
                                     for (k = 0; k < words.length; k++) {
                                         myBoundingBox = words[k].boundingPolygon;
-                                        if (myBoundingBox.lenth === 4) {
+                                        if (myBoundingBox.length === 4) {
                                             Log.print(Log.l.trace, 
                                                 "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
                                                 " p1: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
