@@ -188,9 +188,18 @@
                     Log.print(Log.l.trace, "handle responseText: responseText=" + responseText);
                     try {
                         var i, j, k, myBoundingBox, ocr_angle = 0, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
+                        var radians_to_degrees = function (radians) {
+                            var pi = Math.PI;
+                            return radians * (180 / pi);
+                        };
                         var degrees_to_radians = function (degrees) {
                             var pi = Math.PI;
                             return degrees * (pi / 180);
+                        };
+                        var getAngle = function(points) {
+                            var dy = (points[3].y - points[2].y + points[0].y - points[1].y) / 2;
+                            var dx = (points[2].x - points[3].x + points[1].x - points[0].x) / 2;
+                            return dy ? radians_to_degrees(Math.atan(dy / dx)) : 0;
                         };
                         var rotatePoint = function (point, degrees) {
                             var radians = degrees_to_radians(degrees);
@@ -219,21 +228,23 @@
                                             ocr_angle = readResults[i].angle;
                                             lfHeight = 15;
                                             text = readResults[i].lines[j].words[k].text;
-                                            boundingBoxRotated = [];
-                                            for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
-                                                x = parseInt(myBoundingBox[l]);
-                                                y = parseInt(myBoundingBox[l + 1]);
-                                                rotatedPoint = null;
-                                                if (ocr_angle < 0) {
-                                                    rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                                } else {
-                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                                }
-                                                boundingBoxRotated.push(rotatedPoint.x);
-                                                boundingBoxRotated.push(rotatedPoint.y);
-                                            }
                                             if (ocr_angle) {
-                                                myBoundingBox = boundingBoxRotated;
+                                                boundingBoxRotated = [];
+                                                for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                                    x = parseInt(myBoundingBox[l]);
+                                                    y = parseInt(myBoundingBox[l + 1]);
+                                                    rotatedPoint = null;
+                                                    if (ocr_angle < 0) {
+                                                        rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
+                                                    } else {
+                                                        rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                                    }
+                                                    boundingBoxRotated.push(rotatedPoint.x);
+                                                    boundingBoxRotated.push(rotatedPoint.y);
+                                                }
+                                                if (ocr_angle) {
+                                                    myBoundingBox = boundingBoxRotated;
+                                                }
                                             }
                                             x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                             y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
@@ -247,8 +258,50 @@
                                 }
                             }
                         } else if (myresultJson && myresultJson.readResult &&
+                            (myresultJson.readResult.blocks)) {
+                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis blocks result!");
+                            var blocks = myresultJson.readResult.blocks;
+                            for (i = 0; i < blocks.length; i++) {
+                                var lines = blocks[i].lines;
+                                if (lines) for (j = 0; j < lines.length; i++) {
+                                    var words = lines[j];
+                                    for (k = 0; k < words.length; k++) {
+                                        myBoundingBox = words[k].boundingPolygon;
+                                        lfHeight = 15;
+                                        text = words[k].text;
+                                        ocr_angle = blocks[i].angle || getAngle(myBoundingBox);
+                                        if (ocr_angle) {
+                                            boundingBoxRotated = [];
+                                            for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                                x = myBoundingBox[l].x;
+                                                y = myBoundingBox[l].y;
+                                                rotatedPoint = null;
+                                                if (ocr_angle < 0) {
+                                                    rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
+                                                } else {
+                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                                }
+                                                boundingBoxRotated.push(rotatedPoint);
+                                            }
+                                            if (ocr_angle) {
+                                                myBoundingBox = boundingBoxRotated;
+                                            }
+                                        }
+                                        x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
+                                        y = Math.round((myBoundingBox[0].y + myBoundingBox[1].y) / 2);
+                                        width = Math.round((myBoundingBox[1].x - myBoundingBox[0].x +
+                                                            myBoundingBox[2].x - myBoundingBox[3].x) / 2);
+                                        height = Math.round((myBoundingBox[2].y - myBoundingBox[1].y +
+                                                             myBoundingBox[3]-y - myBoundingBox[0].y) / 2);
+                                        if (text) {
+                                            myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (myresultJson && myresultJson.readResult &&
                             (myresultJson.readResult.pages)) {
-                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis result!");
+                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis pages result!");
                             var pages = myresultJson.readResult.pages;
                             for (i = 0; i < pages.length; i++) {
                                 for (k = 0; k < pages[i].words.length; k++) {
@@ -256,21 +309,23 @@
                                     ocr_angle = pages[i].angle || 0;
                                     lfHeight = 15;
                                     text = pages[i].words[k].content;
-                                    boundingBoxRotated = [];
-                                    for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
-                                        x = parseInt(myBoundingBox[l]);
-                                        y = parseInt(myBoundingBox[l + 1]);
-                                        rotatedPoint = null;
-                                        if (ocr_angle < 0) {
-                                            rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                        } else {
-                                            rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                        }
-                                        boundingBoxRotated.push(rotatedPoint.x);
-                                        boundingBoxRotated.push(rotatedPoint.y);
-                                    }
                                     if (ocr_angle) {
-                                        myBoundingBox = boundingBoxRotated;
+                                        boundingBoxRotated = [];
+                                        for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                            x = parseInt(myBoundingBox[l]);
+                                            y = parseInt(myBoundingBox[l + 1]);
+                                            rotatedPoint = null;
+                                            if (ocr_angle < 0) {
+                                                rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
+                                            } else {
+                                                rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                            }
+                                            boundingBoxRotated.push(rotatedPoint.x);
+                                            boundingBoxRotated.push(rotatedPoint.y);
+                                        }
+                                        if (ocr_angle) {
+                                            myBoundingBox = boundingBoxRotated;
+                                        }
                                     }
                                     x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                     y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
@@ -285,19 +340,7 @@
                                         myBoundingBox[1]) /
                                         2);
                                     if (text) {
-                                        myResult = myResult +
-                                            x +
-                                            "," +
-                                            y +
-                                            "," +
-                                            width +
-                                            "," +
-                                            height +
-                                            "," +
-                                            lfHeight +
-                                            "," +
-                                            text +
-                                            "\n";
+                                        myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
                                     }
                                 }
                             }
