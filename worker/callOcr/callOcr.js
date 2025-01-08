@@ -269,7 +269,7 @@
                                         myBoundingBox = words[k].boundingPolygon;
                                         lfHeight = 15;
                                         text = words[k].text;
-                                        ocr_angle = blocks[i].angle || getAngle(myBoundingBox);
+                                        ocr_angle = blocks[i].angle || 0 ;//getAngle(myBoundingBox);
                                         if (ocr_angle) {
                                             boundingBoxRotated = [];
                                             for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
