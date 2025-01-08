@@ -263,7 +263,7 @@
                             var blocks = myresultJson.readResult.blocks;
                             for (i = 0; i < blocks.length; i++) {
                                 var lines = blocks[i].lines;
-                                if (lines) for (j = 0; j < lines.length; i++) {
+                                if (lines) for (j = 0; j < lines.length; j++) {
                                     var words = lines[j];
                                     for (k = 0; k < words.length; k++) {
                                         myBoundingBox = words[k].boundingPolygon;
@@ -272,7 +272,7 @@
                                         ocr_angle = blocks[i].angle || 0 ;//getAngle(myBoundingBox);
                                         if (ocr_angle) {
                                             boundingBoxRotated = [];
-                                            for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                            for (l = 0; l < myBoundingBox.length; l++) {
                                                 x = myBoundingBox[l].x;
                                                 y = myBoundingBox[l].y;
                                                 rotatedPoint = null;
