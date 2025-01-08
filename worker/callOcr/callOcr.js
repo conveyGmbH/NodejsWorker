@@ -199,7 +199,7 @@
                         var getAngle = function(points) {
                             var dy = (points[3].y - points[2].y + points[0].y - points[1].y) / 2;
                             var dx = (points[2].x - points[3].x + points[1].x - points[0].x) / 2;
-                            return dy ? radians_to_degrees(Math.atan(dy / dx)) : 0;
+                            return dy ? Math.round(radians_to_degrees(Math.atan(dy / dx))) : 0;
                         };
                         var rotatePoint = function (point, degrees) {
                             var radians = degrees_to_radians(degrees);
@@ -266,21 +266,28 @@
                                 var lines = blocks[i].lines;
                                 Log.print(Log.l.trace, "blocks[" + i + "].lines.length=" + lines.length);
                                 if (lines) for (j = 0; j < lines.length; j++) {
+                                    myBoundingBox = lines[j].boundingPolygon;
+                                    Log.print(Log.l.trace, 
+                                        "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                        " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                        " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                        " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                    );
+                                    ocr_angle = lines[j].angle || getAngle(myBoundingBox);
                                     var words = lines[j].words;
-                                    Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length);
+                                    Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length + " ocr_angle=" + ocr_angle);
                                     for (k = 0; k < words.length; k++) {
                                         myBoundingBox = words[k].boundingPolygon;
                                         if (myBoundingBox.length === 4) {
                                             Log.print(Log.l.trace, 
                                                 "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                " p1: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                " p2: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                " p3: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y
+                                                " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                                " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                                " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
                                             );
                                             lfHeight = 15;
                                             text = words[k].text;
-                                            ocr_angle = blocks[i].angle || getAngle(myBoundingBox);
-                                            Log.print(Log.l.trace, "words[" + k + "].text=" + text + " ocr_angle=" + ocr_angle);
+                                            Log.print(Log.l.trace, "words[" + k + "].text=" + text);
                                             if (ocr_angle) {
                                                 boundingBoxRotated = [];
                                                 for (l = 0; l < myBoundingBox.length; l++) {
