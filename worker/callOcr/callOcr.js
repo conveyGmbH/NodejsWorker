@@ -279,7 +279,7 @@
                                             );
                                             lfHeight = 15;
                                             text = words[k].text;
-                                            ocr_angle = blocks[i].angle || 0 ;//getAngle(myBoundingBox);
+                                            ocr_angle = blocks[i].angle || getAngle(myBoundingBox);
                                             Log.print(Log.l.trace, "words[" + k + "].text=" + text + " ocr_angle=" + ocr_angle);
                                             if (ocr_angle) {
                                                 boundingBoxRotated = [];
@@ -303,7 +303,7 @@
                                             width = Math.round((myBoundingBox[1].x - myBoundingBox[0].x +
                                                                 myBoundingBox[2].x - myBoundingBox[3].x) / 2);
                                             height = Math.round((myBoundingBox[2].y - myBoundingBox[1].y +
-                                                                 myBoundingBox[3]-y - myBoundingBox[0].y) / 2);
+                                                                 myBoundingBox[3].y - myBoundingBox[0].y) / 2);
                                             Log.print(Log.l.trace, "x=" + x + " y=" + y + " width=" + width + " height=" + height);
                                             if (text) {
                                                 myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
