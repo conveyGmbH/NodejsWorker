@@ -303,6 +303,12 @@
                                                 }
                                                 if (ocr_angle) {
                                                     myBoundingBox = boundingBoxRotated;
+                                                    Log.print(Log.l.trace, 
+                                                        "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                                        " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                                        " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                                        " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                                    );
                                                 }
                                             }
                                             x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
