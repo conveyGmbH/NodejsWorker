@@ -197,7 +197,7 @@
                             return degrees * (pi / 180);
                         };
                         var getAngle = function(points) {
-                            var dy = (points[3].y - points[2].y + points[0].y - points[1].y) / 2;
+                            var dy = (points[2].y - points[3].y + points[1].y - points[0].y) / 2;
                             var dx = (points[2].x - points[3].x + points[1].x - points[0].x) / 2;
                             return dy ? Math.round(radians_to_degrees(Math.atan(dy / dx))) : 0;
                         };
