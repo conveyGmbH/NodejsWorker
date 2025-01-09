@@ -235,7 +235,7 @@
                                     }
                                 }
                             }
-                            Log.print(Log.l.trace, "getAngle returned: " + ret);
+                            //Log.print(Log.l.trace, "getAngle returned: " + ret);
                             return ret;
                         };
                         var rotatePoint = function (point, degrees) {
@@ -295,37 +295,37 @@
                                 //Log.print(Log.l.trace, "blocks[" + i + "].lines.length=" + lines.length);
                                 if (lines) for (j = 0; j < lines.length; j++) {
                                     myBoundingBox = lines[j].boundingPolygon;
-                                    Log.print(Log.l.trace, 
-                                        "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                        " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
-                                        " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
-                                        " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
-                                    );
+                                    //Log.print(Log.l.trace, 
+                                    //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                    //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                    //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                    //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                    //);
                                     ocr_angle = lines[j].angle || getAngle(myBoundingBox);
                                     var words = lines[j].words;
                                     //Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length);
                                     for (k = 0; k < words.length; k++) {
                                         myBoundingBox = words[k].boundingPolygon;
                                         if (myBoundingBox.length === 4) {
-                                            Log.print(Log.l.trace, 
-                                                "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
-                                                " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
-                                                " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
-                                            );
+                                            //Log.print(Log.l.trace, 
+                                            //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                            //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                            //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                            //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                            //);
                                             lfHeight = 15;
                                             text = words[k].text;
-                                            Log.print(Log.l.trace, "words[" + k + "].text=" + text);
+                                            //Log.print(Log.l.trace, "words[" + k + "].text=" + text);
                                             if (ocr_angle) {
                                                 for (l = 0; l < myBoundingBox.length; l++) {
                                                     myBoundingBox[l] = rotatePoint(myBoundingBox[l], ocr_angle);
                                                 }
-                                                Log.print(Log.l.trace, 
-                                                    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
-                                                    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
-                                                    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
-                                                );
+                                                //Log.print(Log.l.trace, 
+                                                //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                                //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                                //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                                //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                                //);
                                             }
                                             x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
                                             y = Math.round((myBoundingBox[0].y + myBoundingBox[1].y) / 2);
