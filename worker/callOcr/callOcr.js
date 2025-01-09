@@ -235,6 +235,7 @@
                                     }
                                 }
                             }
+                            Log.print(Log.l.trace, "getAngle returned: " + ret);
                             return ret;
                         };
                         var rotatePoint = function (point, degrees) {
@@ -302,7 +303,7 @@
                                     );
                                     ocr_angle = lines[j].angle || getAngle(myBoundingBox);
                                     var words = lines[j].words;
-                                    Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length + " ocr_angle=" + ocr_angle);
+                                    //Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length);
                                     for (k = 0; k < words.length; k++) {
                                         myBoundingBox = words[k].boundingPolygon;
                                         if (myBoundingBox.length === 4) {
