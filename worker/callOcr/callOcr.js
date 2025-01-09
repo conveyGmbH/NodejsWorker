@@ -204,13 +204,9 @@
                         var rotatePoint = function (point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
-                            var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
-
-                            var qx = cos_rad * point.x - sin_rad * point.y;
-                            var qy = sin_rad * point.x + cos_rad * point.y;
-                            if (ocr_angle < 0) {
-                                qy = -qy;
-                            }
+                            var sin_rad = Math.sin(radians);
+                            var qx = cos_rad * point.x + sin_rad * point.y;
+                            var qy = cos_rad * point.y - sin_rad * point.x;
                             return { x: qx, y: qy };
                         };
                         var myresultJson = JSON.parse(responseText);
@@ -233,12 +229,7 @@
                                                 for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
                                                     x = parseInt(myBoundingBox[l]);
                                                     y = parseInt(myBoundingBox[l + 1]);
-                                                    rotatedPoint = null;
-                                                    if (ocr_angle < 0) {
-                                                        rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                                    } else {
-                                                        rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                                    }
+                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
                                                     boundingBoxRotated.push(rotatedPoint.x);
                                                     boundingBoxRotated.push(rotatedPoint.y);
                                                 }
@@ -289,27 +280,15 @@
                                             text = words[k].text;
                                             Log.print(Log.l.trace, "words[" + k + "].text=" + text);
                                             if (ocr_angle) {
-                                                boundingBoxRotated = [];
                                                 for (l = 0; l < myBoundingBox.length; l++) {
-                                                    x = myBoundingBox[l].x;
-                                                    y = myBoundingBox[l].y;
-                                                    rotatedPoint = null;
-                                                    if (ocr_angle < 0) {
-                                                        rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                                    } else {
-                                                        rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                                    }
-                                                    boundingBoxRotated.push(rotatedPoint);
+                                                    myBoundingBox[l] = rotatePoint(myBoundingBox[l], ocr_angle);
                                                 }
-                                                if (ocr_angle) {
-                                                    myBoundingBox = boundingBoxRotated;
-                                                    Log.print(Log.l.trace, 
-                                                        "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
-                                                        " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
-                                                        " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
-                                                        " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
-                                                    );
-                                                }
+                                                Log.print(Log.l.trace, 
+                                                    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                                    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                                    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                                    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                                );
                                             }
                                             x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
                                             y = Math.round((myBoundingBox[0].y + myBoundingBox[1].y) / 2);
@@ -340,12 +319,7 @@
                                         for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
                                             x = parseInt(myBoundingBox[l]);
                                             y = parseInt(myBoundingBox[l + 1]);
-                                            rotatedPoint = null;
-                                            if (ocr_angle < 0) {
-                                                rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                            } else {
-                                                rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                            }
+                                            rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
                                             boundingBoxRotated.push(rotatedPoint.x);
                                             boundingBoxRotated.push(rotatedPoint.y);
                                         }
