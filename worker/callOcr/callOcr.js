@@ -209,29 +209,29 @@
                             if (dx > 0) {
                                 if (dy > 0) {
                                     if (dx >= dy) {
-                                        ret = Math.round(radians_to_degrees(Math.atan(dy / dx)));
+                                        ret = radians_to_degrees(Math.atan(dy / dx));
                                     } else {
-                                        ret = 90 - Math.round(radians_to_degrees(Math.atan(dx / dy)));
+                                        ret = 90 - radians_to_degrees(Math.atan(dx / dy));
                                     }
                                 } else {
                                     if (dx >= -dy) {
-                                        ret = 360 - Math.round(radians_to_degrees(Math.atan(dy / -dx)));
+                                        ret = 360 - radians_to_degrees(Math.atan(dy / -dx));
                                     } else {
-                                        ret = 270 + Math.round(radians_to_degrees(Math.atan(dx / -dy)));
+                                        ret = 270 + radians_to_degrees(Math.atan(dx / -dy));
                                     }
                                 }
                             } else {
                                 if (dy > 0) {
                                     if (-dx >= dy) {
-                                        ret = 180 - Math.round(radians_to_degrees(Math.atan(dy / -dx)));
+                                        ret = 180 - radians_to_degrees(Math.atan(dy / -dx));
                                     } else {
-                                        ret = 90 + Math.round(radians_to_degrees(Math.atan(-dx / dy)));
+                                        ret = 90 + radians_to_degrees(Math.atan(-dx / dy));
                                     }
                                 } else {
                                     if (-dx >= -dy) {
-                                        ret = 180 + Math.round(radians_to_degrees(Math.atan(-dy / -dx)));
+                                        ret = 180 + radians_to_degrees(Math.atan(-dy / -dx));
                                     } else {
-                                        ret = 270 - Math.round(radians_to_degrees(Math.atan(-dx / -dy)));
+                                        ret = 270 - radians_to_degrees(Math.atan(-dx / -dy));
                                     }
                                 }
                             }
