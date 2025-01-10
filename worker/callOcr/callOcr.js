@@ -203,11 +203,11 @@
                             }
                             var dy = (points[2].y - points[3].y + points[1].y - points[0].y) / 2;
                             var dx = (points[2].x - points[3].x + points[1].x - points[0].x) / 2;
-                            if (!dx || !dy) {
+                            if (!dx && !dy) {
                                 return ret;
                             }
-                            if (dx > 0) {
-                                if (dy > 0) {
+                            if (dx >= 0) {
+                                if (dy >= 0) {
                                     if (dx >= dy) {
                                         ret = radians_to_degrees(Math.atan(dy / dx));
                                     } else {
@@ -221,7 +221,7 @@
                                     }
                                 }
                             } else {
-                                if (dy > 0) {
+                                if (dy >= 0) {
                                     if (-dx >= dy) {
                                         ret = 180 - radians_to_degrees(Math.atan(dy / -dx));
                                     } else {
