@@ -133,11 +133,12 @@
                     that.errorCount++;
                     Log.print(Log.l.error, "ocrPostRequest: error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
                     that.timestamp = new Date();
+                    err = errorResponse;
                 });
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function handleResponseHeader(url) {
-                if (!url) {
+                if (!url || err) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "handleResponseHeader: calling OCR Operation-Location=" + url);
@@ -180,7 +181,7 @@
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function importCardscanBulk() {
-                if (!importcardscanid) {
+                if (!importcardscanid || err {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "importCardscanBulk: importcardscanid=" + importcardscanid);
@@ -403,10 +404,10 @@
                         };
                     }
                 }
-                if (!myResult) {
-                    Log.ret(Log.l.error, "no result found!");
-                    return WinJS.Promise.as();
-                }
+                //if (!myResult) {
+                //    Log.ret(Log.l.error, "no result found!");
+                //    return WinJS.Promise.as();
+                //}
                 if (!that._importCardscanBulk_ODataView) {
                     //that.errorCount++;
                     that.timestamp = new Date();
@@ -433,7 +434,7 @@
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function selectImportCardscan() {
-                if (!importcardscanid) {
+                if (!importcardscanid || err) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "selectImportCardscan: importcardscanid=" + importcardscanid);
@@ -474,7 +475,7 @@
                     return WinJS.Promise.as();
                 }
                 Log.print(Log.l.trace, "updateImportCardscan: cardscanbulkid=" + cardscanbulkid);
-                if (!myResult || bulkError) {
+                if (bulkError || err) {
                     Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
                     dataImportCardscan.Button = pAktionStatus;
