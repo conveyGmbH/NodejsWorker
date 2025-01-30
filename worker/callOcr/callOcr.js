@@ -504,7 +504,7 @@
                 }
                 Log.call(Log.l.trace, "callOcr.", "doRepeate: pAktionStatus=" + pAktionStatus);
                 var promise;
-                if (myResult) {
+                if (!bulkError && !err) {
                     promise = that.activity();
                 } else {
                     promise = WinJS.Promise.as();
