@@ -479,6 +479,15 @@
                     Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
                     dataImportCardscan.Button = pAktionStatus;
+                    if (!dataImportCardscan.INITLandID) {
+                        dataImportCardscan.INITLandID = 0;
+                    }
+                    if (!dataImportCardscan.INITAnredeID) {
+                        dataImportCardscan.INITAnredeID = 0;
+                    }
+                    if (!dataImportCardscan.IMPORT_CARDSCANVIEWID) {
+                        dataImportCardscan.IMPORT_CARDSCANVIEWID = importcardscanid;
+                    }
                     that.lastAction = 'updateImportCardscan';
                     var promise = that._importCardscan_ODataView.update(function (json) {
                         that.errorCount++;
