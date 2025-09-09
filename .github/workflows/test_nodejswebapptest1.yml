@@ -54,6 +54,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'NodejsWebAppTest1'
-          slot-name: 'Production'
+          slot-name: 'production'
           package: .
           
