@@ -13,9 +13,11 @@
 (function () {
     "use strict";
 
-    global.navigator = {
-        platform: "node"
-    };
+    if (typeof navigator === 'undefined') {
+        global.navigator = {
+            platform: "node"
+        };
+    }
     function include(f, key) {
         var start = f.lastIndexOf("/") + 1;
         var stop = f.indexOf(".", start);
