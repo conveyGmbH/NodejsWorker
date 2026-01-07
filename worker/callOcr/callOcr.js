@@ -13,9 +13,12 @@
         subscriptionKey = process.env.OCR_SUBSCRIPTION_KEY;
     }
     //var uriBase = "https://westeurope.api.cognitive.microsoft.com/vision/v3.2/read/analyze?detectOrientation=true";
-    var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2023-04-01-preview&features=read";
     //var uriBase = "https://westeurope.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read";
     //var uriBase = "https://westeurope.cognitiveservices.azure.com/documentintelligence/documentModels/prebuilt-layout:analyze?_overload=analyzeDocument&api-version=2024-07-31-preview";
+    var uriBase = "https://lsocr.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read";
+    if (process && process.env && process.env.COGNITIVESERVICES_URL) {
+        subscriptionKey = process.env.COGNITIVESERVICES_URL;
+    }
     var UUID = require("uuid-js");
     var b64js = require("base64-js");
 
@@ -133,11 +136,12 @@
                     that.errorCount++;
                     Log.print(Log.l.error, "ocrPostRequest: error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
                     that.timestamp = new Date();
+                    err = errorResponse;
                 });
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function handleResponseHeader(url) {
-                if (!url) {
+                if (!url || err) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "handleResponseHeader: calling OCR Operation-Location=" + url);
@@ -180,28 +184,70 @@
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function importCardscanBulk() {
-                if (!importcardscanid) {
+                if (!importcardscanid || err) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "importCardscanBulk: importcardscanid=" + importcardscanid);
                 if (responseText) {
-                    Log.print(Log.l.trace, "handle responseText: responseText=" + responseText);
+                    Log.print(Log.l.trace, "handle responseText: responseText=" + responseText.substr(0, 128));
                     try {
+                        var pi = Math.PI;
                         var i, j, k, myBoundingBox, ocr_angle = 0, lfHeight, text, boundingBoxRotated, l, x, y, rotatedPoint, width, height;
-                        var degrees_to_radians = function (degrees) {
+                        var radians_to_degrees = function (radians) {
                             var pi = Math.PI;
+                            return radians * (180 / pi);
+                        };
+                        var degrees_to_radians = function (degrees) {
                             return degrees * (pi / 180);
+                        };
+                        var getAngle = function(points) {
+                            var ret = 0;
+                            if (!points || points.length !== 4) {
+                                return ret;
+                            }
+                            var dy = (points[2].y - points[3].y + points[1].y - points[0].y) / 2;
+                            var dx = (points[2].x - points[3].x + points[1].x - points[0].x) / 2;
+                            if (!dx && !dy) {
+                                return ret;
+                            }
+                            if (dx >= 0) {
+                                if (dy >= 0) {
+                                    if (dx >= dy) {
+                                        ret = radians_to_degrees(Math.atan(dy / dx));
+                                    } else {
+                                        ret = 90 - radians_to_degrees(Math.atan(dx / dy));
+                                    }
+                                } else {
+                                    if (dx >= -dy) {
+                                        ret = 360 - radians_to_degrees(Math.atan(dy / -dx));
+                                    } else {
+                                        ret = 270 + radians_to_degrees(Math.atan(dx / -dy));
+                                    }
+                                }
+                            } else {
+                                if (dy >= 0) {
+                                    if (-dx >= dy) {
+                                        ret = 180 - radians_to_degrees(Math.atan(dy / -dx));
+                                    } else {
+                                        ret = 90 + radians_to_degrees(Math.atan(-dx / dy));
+                                    }
+                                } else {
+                                    if (-dx >= -dy) {
+                                        ret = 180 + radians_to_degrees(Math.atan(-dy / -dx));
+                                    } else {
+                                        ret = 270 - radians_to_degrees(Math.atan(-dx / -dy));
+                                    }
+                                }
+                            }
+                            //Log.print(Log.l.trace, "getAngle returned: " + ret);
+                            return ret;
                         };
                         var rotatePoint = function (point, degrees) {
                             var radians = degrees_to_radians(degrees);
                             var cos_rad = Math.cos(radians);
-                            var sin_rad = degrees < 0 ? Math.sin(radians) : -Math.sin(radians);
-
-                            var qx = cos_rad * point.x - sin_rad * point.y;
-                            var qy = sin_rad * point.x + cos_rad * point.y;
-                            if (ocr_angle < 0) {
-                                qy = -qy;
-                            }
+                            var sin_rad = Math.sin(radians);
+                            var qx = cos_rad * point.x + sin_rad * point.y;
+                            var qy = cos_rad * point.y - sin_rad * point.x;
                             return { x: qx, y: qy };
                         };
                         var myresultJson = JSON.parse(responseText);
@@ -219,21 +265,18 @@
                                             ocr_angle = readResults[i].angle;
                                             lfHeight = 15;
                                             text = readResults[i].lines[j].words[k].text;
-                                            boundingBoxRotated = [];
-                                            for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
-                                                x = parseInt(myBoundingBox[l]);
-                                                y = parseInt(myBoundingBox[l + 1]);
-                                                rotatedPoint = null;
-                                                if (ocr_angle < 0) {
-                                                    rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                                } else {
-                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                                }
-                                                boundingBoxRotated.push(rotatedPoint.x);
-                                                boundingBoxRotated.push(rotatedPoint.y);
-                                            }
                                             if (ocr_angle) {
-                                                myBoundingBox = boundingBoxRotated;
+                                                boundingBoxRotated = [];
+                                                for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                                    x = parseInt(myBoundingBox[l]);
+                                                    y = parseInt(myBoundingBox[l + 1]);
+                                                    rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                                    boundingBoxRotated.push(rotatedPoint.x);
+                                                    boundingBoxRotated.push(rotatedPoint.y);
+                                                }
+                                                if (ocr_angle) {
+                                                    myBoundingBox = boundingBoxRotated;
+                                                }
                                             }
                                             x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                             y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
@@ -247,8 +290,64 @@
                                 }
                             }
                         } else if (myresultJson && myresultJson.readResult &&
+                            (myresultJson.readResult.blocks)) {
+                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis blocks result!");
+                            var blocks = myresultJson.readResult.blocks;
+                            //Log.print(Log.l.trace, "blocks.length=" + blocks.length);
+                            for (i = 0; i < blocks.length; i++) {
+                                var lines = blocks[i].lines;
+                                //Log.print(Log.l.trace, "blocks[" + i + "].lines.length=" + lines.length);
+                                if (lines) for (j = 0; j < lines.length; j++) {
+                                    myBoundingBox = lines[j].boundingPolygon;
+                                    //Log.print(Log.l.trace, 
+                                    //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                    //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                    //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                    //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                    //);
+                                    ocr_angle = lines[j].angle || getAngle(myBoundingBox);
+                                    var words = lines[j].words;
+                                    //Log.print(Log.l.trace, "lines[" + j + "].words.length=" + words.length);
+                                    for (k = 0; k < words.length; k++) {
+                                        myBoundingBox = words[k].boundingPolygon;
+                                        if (myBoundingBox.length === 4) {
+                                            //Log.print(Log.l.trace, 
+                                            //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                            //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                            //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                            //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                            //);
+                                            lfHeight = 15;
+                                            text = words[k].text;
+                                            //Log.print(Log.l.trace, "words[" + k + "].text=" + text);
+                                            if (ocr_angle) {
+                                                for (l = 0; l < myBoundingBox.length; l++) {
+                                                    myBoundingBox[l] = rotatePoint(myBoundingBox[l], ocr_angle);
+                                                }
+                                                //Log.print(Log.l.trace, 
+                                                //    "p0: x=" + myBoundingBox[0].x + ", y=" +  myBoundingBox[0].y +
+                                                //    " p1: x=" + myBoundingBox[1].x + ", y=" +  myBoundingBox[1].y +
+                                                //    " p2: x=" + myBoundingBox[2].x + ", y=" +  myBoundingBox[2].y +
+                                                //    " p3: x=" + myBoundingBox[3].x + ", y=" +  myBoundingBox[3].y
+                                                //);
+                                            }
+                                            x = Math.round((myBoundingBox[0].x + myBoundingBox[3].x) / 2);
+                                            y = Math.round((myBoundingBox[0].y + myBoundingBox[1].y) / 2);
+                                            width = Math.round((myBoundingBox[1].x - myBoundingBox[0].x +
+                                                                myBoundingBox[2].x - myBoundingBox[3].x) / 2);
+                                            height = Math.round((myBoundingBox[2].y - myBoundingBox[1].y +
+                                                                 myBoundingBox[3].y - myBoundingBox[0].y) / 2);
+                                            //Log.print(Log.l.trace, "x=" + x + " y=" + y + " width=" + width + " height=" + height);
+                                            if (text) {
+                                                myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (myresultJson && myresultJson.readResult &&
                             (myresultJson.readResult.pages)) {
-                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis result!");
+                            Log.print(Log.l.trace, "handleResponseText: OCR Image Analysis pages result!");
                             var pages = myresultJson.readResult.pages;
                             for (i = 0; i < pages.length; i++) {
                                 for (k = 0; k < pages[i].words.length; k++) {
@@ -256,21 +355,18 @@
                                     ocr_angle = pages[i].angle || 0;
                                     lfHeight = 15;
                                     text = pages[i].words[k].content;
-                                    boundingBoxRotated = [];
-                                    for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
-                                        x = parseInt(myBoundingBox[l]);
-                                        y = parseInt(myBoundingBox[l + 1]);
-                                        rotatedPoint = null;
-                                        if (ocr_angle < 0) {
-                                            rotatedPoint = rotatePoint({ x: x, y: -y }, ocr_angle);
-                                        } else {
-                                            rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
-                                        }
-                                        boundingBoxRotated.push(rotatedPoint.x);
-                                        boundingBoxRotated.push(rotatedPoint.y);
-                                    }
                                     if (ocr_angle) {
-                                        myBoundingBox = boundingBoxRotated;
+                                        boundingBoxRotated = [];
+                                        for (l = 0; l < myBoundingBox.length - 1; l = l + 2) {
+                                            x = parseInt(myBoundingBox[l]);
+                                            y = parseInt(myBoundingBox[l + 1]);
+                                            rotatedPoint = rotatePoint({ x: x, y: y }, ocr_angle);
+                                            boundingBoxRotated.push(rotatedPoint.x);
+                                            boundingBoxRotated.push(rotatedPoint.y);
+                                        }
+                                        if (ocr_angle) {
+                                            myBoundingBox = boundingBoxRotated;
+                                        }
                                     }
                                     x = Math.round((myBoundingBox[0] + myBoundingBox[6]) / 2);
                                     y = Math.round((myBoundingBox[1] + myBoundingBox[3]) / 2);
@@ -285,19 +381,7 @@
                                         myBoundingBox[1]) /
                                         2);
                                     if (text) {
-                                        myResult = myResult +
-                                            x +
-                                            "," +
-                                            y +
-                                            "," +
-                                            width +
-                                            "," +
-                                            height +
-                                            "," +
-                                            lfHeight +
-                                            "," +
-                                            text +
-                                            "\n";
+                                        myResult = myResult + x + "," + y + "," + width + "," + height + "," + lfHeight + "," + text + "\n";
                                     }
                                 }
                             }
@@ -323,10 +407,10 @@
                         };
                     }
                 }
-                if (!myResult) {
-                    Log.ret(Log.l.error, "no result found!");
-                    return WinJS.Promise.as();
-                }
+                //if (!myResult) {
+                //    Log.ret(Log.l.error, "no result found!");
+                //    return WinJS.Promise.as();
+                //}
                 if (!that._importCardscanBulk_ODataView) {
                     //that.errorCount++;
                     that.timestamp = new Date();
@@ -353,7 +437,7 @@
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function selectImportCardscan() {
-                if (!importcardscanid) {
+                if (!importcardscanid || err) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "selectImportCardscan: importcardscanid=" + importcardscanid);
@@ -394,10 +478,19 @@
                     return WinJS.Promise.as();
                 }
                 Log.print(Log.l.trace, "updateImportCardscan: cardscanbulkid=" + cardscanbulkid);
-                if (!myResult || bulkError) {
+                if (bulkError || err) {
                     Log.print(Log.l.error, "updateImportCardscan: OCR_ERROR");
                     pAktionStatus = "OCR_ERROR";
                     dataImportCardscan.Button = pAktionStatus;
+                    if (!dataImportCardscan.INITLandID) {
+                        dataImportCardscan.INITLandID = 0;
+                    }
+                    if (!dataImportCardscan.INITAnredeID) {
+                        dataImportCardscan.INITAnredeID = 0;
+                    }
+                    if (!dataImportCardscan.IMPORT_CARDSCANVIEWID) {
+                        dataImportCardscan.IMPORT_CARDSCANVIEWID = importcardscanid;
+                    }
                     that.lastAction = 'updateImportCardscan';
                     var promise = that._importCardscan_ODataView.update(function (json) {
                         that.errorCount++;
@@ -423,7 +516,7 @@
                 }
                 Log.call(Log.l.trace, "callOcr.", "doRepeate: pAktionStatus=" + pAktionStatus);
                 var promise;
-                if (myResult) {
+                if (!bulkError && !err) {
                     promise = that.activity();
                 } else {
                     promise = WinJS.Promise.as();
