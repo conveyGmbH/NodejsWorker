@@ -105,7 +105,7 @@
                     "PRC_STARTVCARD error! " + that.successCount + " success / " + that.errorCount + " errors");
                 that.timestamp = new Date();
             }).then(function decryptToVCARD() {
-                Log.call(Log.l.trace, "bcrService.", "pAktionStatus=" + pAktionStatus + "myResult= " + myResult);
+                Log.call(Log.l.trace, "bcrService.", "decryptToVCARD: pAktionStatus=" + pAktionStatus + "myResult= " + myResult);
                 if (!startOk) {
                     Log.ret(Log.l.trace, "PRC_STARTVCARD failed!");
                     return WinJS.Promise.as();
@@ -157,7 +157,7 @@
                 Log.ret(Log.l.trace);
                 return WinJS.Promise.as();
             }).then(function unzipResult() {
-                Log.call(Log.l.trace, "bcrService.", "myResult=" + myResult + " dataVCard=" + dataVCard);
+                Log.call(Log.l.trace, "bcrService.", "unzipResult: myResult=" + myResult + " dataVCard=" + dataVCard);
                 if (!myResult) {
                     Log.ret(Log.l.trace, "no valid base64String! myResult=" + myResult);
                     return WinJS.Promise.as();
@@ -204,7 +204,7 @@
                 Log.ret(Log.l.trace);
                 return WinJS.Promise.as();
             }).then(function updateImportCardscan() {
-                Log.call(Log.l.trace, "callBcr.", "dataVCard=" + dataVCard);
+                Log.call(Log.l.trace, "callBcr.", "updateImportCardscan: dataVCard=" + dataVCard);
                 var card = null;
                 //dataVCard = "BEGIN:VCARD\nVERSION:4.0\nN:Mustermann;Erika;;Dr.;\nFN:Dr. Erika Mustermann\nORG:Wikimedia\nROLE:Kommunikation\nTITLE:Redaktion &amp; Gestaltung\nPHOTO;MEDIATYPE=image/jpeg:http://commons.wikimedia.org/wiki/File:Erika_Mustermann_2010.jpg\nTEL;TYPE=work,voice;VALUE=uri:tel:+49-221-9999123\nTEL;TYPE=home,voice;VALUE=uri:tel:+49-221-1234567\nADR;TYPE=home;LABEL=" + "Heidestraße 17\n51147 Köln\nDeutschland" + "\n :;;Heidestraße 17;Köln;;51147;Germany\nEMAIL:erika@mustermann.de\nREV:20140301T221110Z\nEND:VCARD";
                 if (dataVCard)
@@ -312,7 +312,7 @@
                     }
                 }
                 //that.myvCardResult
-                Log.print(Log.l.info, "dataImportCardscanVcard=" + dataImportCardscanVcard);
+                Log.print(Log.l.info, "before override dataImportCardscanVcard=" + JSON.stringify(dataImportCardscanVcard));
                 if (!importcardscanid) {
                     Log.ret(Log.l.trace, "no record found!");
                     return WinJS.Promise.as();
@@ -354,6 +354,7 @@
                     if (anrede)
                         dataImportCardscanVcard.INITAnredeID = anrede;
                     // TODO Behandlung der INITLandID fehlt noch
+                    Log.print(Log.l.info, "after override dataImportCardscanVcard=" + JSON.stringify(dataImportCardscanVcard));
                     return that._importCardscan_ODataView.update(function (json) {
                         that.successCount++;
                         Log.print(Log.l.info, "_importCardscan_ODataView update: success! " + that.successCount + " success / " + that.errorCount + " errors");
@@ -400,7 +401,7 @@
                         AppData.setErrorMsg(that.binding, errorResponse);
                     }, { Request_Barcode: requestBarcode, KontaktID: kontaktID });
                 }
-                });
+            });
             Log.ret(Log.l.trace);
             return ret;
         },
