@@ -301,7 +301,7 @@
                                         case "X-REFCODE":
                                             // wenn im x-refcode was drin steht, dann soll recherche in server mit dieser nummer gemacht werden
                                             // und da die Daten sich holen
-                                            requestBarcode = card["X-REFCODE"][0].value;
+                                            requestBarcode = card["X-REFCODE"][0].value.trim();
                                             break;
                                         default:
                                             Log.print(Log.l.info, "IGNORE DATA");
