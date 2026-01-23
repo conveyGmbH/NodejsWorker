@@ -66,3 +66,6 @@ typings/
 *.pubxml.user
 *.cache
 libman.json
+
+#VSCode
+.vscode
