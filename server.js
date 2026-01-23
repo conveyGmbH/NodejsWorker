@@ -149,6 +149,7 @@
         //"callOcr",
         //"bcrService",
         //"dbSyncService"
+        {name: "recognizeBusinessCardAI", count: 1}
     ];
     if (process && process.env && process.env.WORKER_SERVICE_OPTIONS) {
         try {
