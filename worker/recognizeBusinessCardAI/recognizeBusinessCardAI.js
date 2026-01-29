@@ -57,7 +57,7 @@
         activity: function () {
             Log.call(Log.l.trace, `${logPrefix}.activity`);
             var that = this;
-            const pAktionStatus = `AI_START-${this.aiocrUuid}`;
+            const pAktionStatus = `BCI_START-${this.aiocrUuid}`;
 
             var currentId = null;
             var imageBuffer = null;
