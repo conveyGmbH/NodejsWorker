@@ -1,4 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+﻿# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
 name: Build and deploy Node.js app to Azure Web App - NodeJsVM01
@@ -23,21 +23,21 @@ jobs:
         with:
           node-version: '24.x'
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -47,13 +47,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2770B507BCD84786864995125FFE572E }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_266380A3831A4F3F86EBDC43E1D0B0E8 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_234048F0B15A48ACACF582F73DF9C6B0 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_42773C50124547BBA6E7BEE345CB20C3 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DB84654AACA44A2E87DFD020A5B70CF6 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_62D3BBD922F54626980BE6392BB02A29 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
