@@ -13,9 +13,10 @@
 (function () {
     "use strict";
 
-    if (typeof navigator === 'undefined') {
+    if (typeof navigator === "undefined" &&
+        typeof global === "object") {
         global.navigator = {
-            platform: "node"
+            platform: global.platform || "node"
         };
     }
     function include(f, key) {
