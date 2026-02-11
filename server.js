@@ -13,9 +13,10 @@
 (function () {
     "use strict";
 
-    if (typeof navigator === 'undefined') {
+    if (typeof navigator === "undefined" &&
+        typeof global === "object") {
         global.navigator = {
-            platform: "node"
+            platform: global.platform || "node"
         };
     }
     function include(f, key) {
@@ -149,6 +150,7 @@
         //"callOcr",
         //"bcrService",
         //"dbSyncService"
+        {name: "recognizeBusinessCardAI", count: 1}
     ];
     if (process && process.env && process.env.WORKER_SERVICE_OPTIONS) {
         try {
