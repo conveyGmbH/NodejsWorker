@@ -12,6 +12,7 @@
     const b64js = require("base64-js");
     const logPrefix = 'recognizeBusinessCardAI'
     const { AzureOpenAI } = require('openai');
+    const fs = require('fs');
 
     function toWinJSPromise(nativePromise, onCancel) {
         return new WinJS.Promise(function (complete, error /*, progress */) {
@@ -38,8 +39,8 @@
             const azureOptions = {
                 endpoint: process.env.AZURE_AI_ENDPOINT,
                 apiKey: process.env.AZURE_AI_APIKEY,
-                deployment: "gpt-4o",
-                apiVersion: "2024-04-01-preview"
+                deployment: "KI-OCR-Businesscards",
+                apiVersion: "2024-08-01-preview"
             };
             this.azureClient = new AzureOpenAI(azureOptions);
             
@@ -55,6 +56,7 @@
         },
 
         activity: function () {
+            const testing = process.env.TESTING
             Log.call(Log.l.trace, `${logPrefix}.activity`);
             var that = this;
             const pAktionStatus = `BCI_START-${this.aiocrUuid}`;
@@ -82,6 +84,25 @@
                     }
                 } else {
                     Log.print(Log.l.info, "No rows to process");
+                    if (testing) {
+                        Log.print(Log.l.info, "Setting test ID and test BLOB!");
+                        currentId = 14600;
+                        var fileBuffer = fs.readFileSync("/Users/emi/Documents/gitProjects/NodejsWorker/.vscode/card.txt");
+                        var doccnt1 = fileBuffer.toString(); // Convert Buffer to string
+                        if (doccnt1) {
+                            // Try Windows line endings first, then Unix
+                            var sub = doccnt1.search("\r\n\r\n");
+                            if (sub < 0) {
+                                sub = doccnt1.search("\n\n");
+                            }
+                            Log.print(Log.l.info, "Header separator position: " + sub);
+                            if (sub >= 0) {
+                                var headerLength = (doccnt1.indexOf("\r\n\r\n") >= 0) ? 4 : 2;
+                                imageBuffer = doccnt1.substr(sub + headerLength).replace(/\s+/g, '');
+                                Log.print(Log.l.info, "Image buffer length: " + imageBuffer.length);
+                            }
+                        }
+                    }
                 };
             }, 
             function callStartError (error) { // Error Callback
@@ -103,8 +124,9 @@
                 var aiReq;
                 try {
                     aiReq = that.azureClient.chat.completions.create({
-                        model: "gpt-4o",
-                        max_tokens: 1024,
+                        model: "KI-OCR-Businesscards",
+                        max_completion_tokens: 4096,
+                        reasoning_effort: "low",
                         messages: [
                             {
                                 role: "user",
@@ -122,7 +144,7 @@
                                 ]
                             }
                         ],
-                        temperature: 0
+                        temperature: 1
                     }, { signal: controller.signal })
                 } catch (e) {
                     clearTimeout(timeoutId);
@@ -139,8 +161,14 @@
                     clearTimeout(timeoutId);
                     try {
                         var content = response.choices?.[0]?.message?.content || '';
+                        
                         // strip code fences if present
                         content = content.replace(/```json|```/g, '').trim();
+                                                
+                        if (!content) {
+                            throw new Error("AI returned empty response");
+                        }
+                        
                         aiResult = JSON.parse(content);
                         that.successCount++;
                         Log.print(Log.l.info, "AI processing successful");
@@ -148,6 +176,7 @@
                         that.errorCount++;
                         err = e;
                         Log.print(Log.l.error, "Failed to parse AI response: " + e);
+                        Log.print(Log.l.error, "Response object: " + JSON.stringify(response));
                     }
                     Log.ret(Log.l.trace);
                 }).then(null, function(error) {
