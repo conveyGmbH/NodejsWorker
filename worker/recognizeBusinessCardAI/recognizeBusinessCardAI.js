@@ -45,7 +45,37 @@
             this.azureClient = new AzureOpenAI(azureOptions);
             
             // Store LLM Prompt
-            this.systemPrompt = `Extract all text from this image. Insert the result in appropriate fields within this JSON Object: {CompanyName: '', AcademicTitle: '', FirstName: '', MiddleName: '', LastName: '', EMail: '', JobTitle: '', Department: '', Industry: '', Phone: '', Mobile: '', Fax: '', AddressData: '', Website: ''}; If a field is not present, set its value to null. Only use these fields and do not add any others. Only return the filled JSON without any extra text. If a full name is present, intelligently split it into "first name" and "last name" using common naming conventions.`;
+            this.systemPrompt = `
+                Extract all text from this image and return a JSON object using exactly these fields:
+
+                {
+                "CompanyName": "",
+                "AcademicTitle": "",
+                "FirstName": "",
+                "MiddleName": "",
+                "LastName": "",
+                "EMail": "",
+                "JobTitle": "",
+                "Department": "",
+                "Industry": "",
+                "Phone": "",
+                "Mobile": "",
+                "Fax": "",
+                "AddressData": "",
+                "ZipCode": "",
+                "City": "",
+                "Website": "",
+                "Remarks": ""
+                }
+
+                Rules:
+                - If a field is not present, set it to null.
+                - Do not add any fields.
+                - Return only the filled JSON object, no extra text.
+                - If a full name is present, split it intelligently into FirstName and LastName.
+                - Split the address intelligently into AddressData (street), ZipCode, and City.
+                - Never include more than one phone/mobile/fax number in a field, store additional ones in the Remarks field.
+            `.trim();
             
             // Initialize your OData views
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
@@ -212,7 +242,9 @@
                     kv('Faxes', aiResult.Fax),
                     kv('Emails', aiResult.EMail),
                     kv('Websites', aiResult.Website),
-                    kv('streetAddress', aiResult.AddressData)
+                    kv('streetAddress', aiResult.AddressData),
+                    kv('ZipCode', aiResult.ZipCode),
+                    kv('city', aiResult.City)
                 );
                 var ocrData = lines.filter(Boolean).join('\n');
 
