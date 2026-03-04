@@ -11,7 +11,6 @@
     const UUID = require("uuid-js");
     const b64js = require("base64-js");
     const logPrefix = 'recognizeBusinessCardAI'
-    const { AzureOpenAI } = require('openai');
     const fs = require('fs');
 
     function toWinJSPromise(nativePromise, onCancel) {
@@ -36,46 +35,8 @@
             this.aiocrUuid = uuid.toString();
             
             // Initialize Azure AI Config
-            const azureOptions = {
-                endpoint: process.env.AZURE_AI_ENDPOINT,
-                apiKey: process.env.AZURE_AI_APIKEY,
-                deployment: "KI-OCR-Businesscards",
-                apiVersion: "2024-08-01-preview"
-            };
-            this.azureClient = new AzureOpenAI(azureOptions);
-            
-            // Store LLM Prompt
-            this.systemPrompt = `
-                Extract all text from this image and return a JSON object using exactly these fields:
-
-                {
-                "CompanyName": "",
-                "AcademicTitle": "",
-                "FirstName": "",
-                "MiddleName": "",
-                "LastName": "",
-                "EMail": "",
-                "JobTitle": "",
-                "Department": "",
-                "Industry": "",
-                "Phone": "",
-                "Mobile": "",
-                "Fax": "",
-                "AddressData": "",
-                "ZipCode": "",
-                "City": "",
-                "Website": "",
-                "Remarks": ""
-                }
-
-                Rules:
-                - If a field is not present, set it to null.
-                - Do not add any fields.
-                - Return only the filled JSON object, no extra text.
-                - If a full name is present, split it intelligently into FirstName and LastName.
-                - Split the address intelligently into AddressData (street), ZipCode, and City.
-                - Never include more than one phone/mobile/fax number in a field, store additional ones in the Remarks field.
-            `.trim();
+            this.endpoint = "https://ki-ocr-layer.services.ai.azure.com/providers/mistral/azure/ocr";
+            this.apiKey = process.env.AZURE_AI_APIKEY;
             
             // Initialize your OData views
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
@@ -117,7 +78,7 @@
                     if (testing) {
                         Log.print(Log.l.info, "Setting test ID and test BLOB!");
                         currentId = 14600;
-                        var fileBuffer = fs.readFileSync("/Users/emi/Documents/gitProjects/NodejsWorker/.vscode/card.txt");
+                        var fileBuffer = fs.readFileSync("/Users/emi/Documents/gitProjects/NodejsWorker/debug/card.txt");
                         var doccnt1 = fileBuffer.toString(); // Convert Buffer to string
                         if (doccnt1) {
                             // Try Windows line endings first, then Unix
@@ -146,67 +107,76 @@
                     return WinJS.Promise.as()
                 };
 
-                Log.print(Log.l.info, "Calling Azure OpenAI...");
+                Log.print(Log.l.info, "Calling Mistral Document AI...");
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-                var aiReq;
-                try {
-                    aiReq = that.azureClient.chat.completions.create({
-                        model: "KI-OCR-Businesscards",
-                        max_completion_tokens: 4096,
-                        reasoning_effort: "low",
-                        messages: [
-                            {
-                                role: "user",
-                                content: [
-                                    {
-                                        type: "text",
-                                        text: that.systemPrompt
+                var fetchReq = fetch(that.endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${that.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-document-ai-2512",
+                        document: {
+                            type: "image_url",
+                            image_url: `data:image/jpeg;base64,${imageBuffer}`
+                        },
+                        document_annotation_format: {
+                            type: "json_schema",
+                            json_schema: {
+                                schema: {
+                                    properties: {
+                                        CompanyName:   { title: "CompanyName",   type: "string" },
+                                        AcademicTitle: { title: "AcademicTitle", type: "string" },
+                                        FirstName:     { title: "FirstName",     type: "string" },
+                                        MiddleName:    { title: "MiddleName",    type: "string" },
+                                        LastName:      { title: "LastName",      type: "string" },
+                                        EMail:         { title: "EMail",         type: "string" },
+                                        JobTitle:      { title: "JobTitle",      type: "string" },
+                                        Department:    { title: "Department",    type: "string" },
+                                        Phone:         { title: "Phone",         type: "string" },
+                                        Mobile:        { title: "Mobile",        type: "string" },
+                                        Fax:           { title: "Fax",           type: "string" },
+                                        AddressData:   { title: "AddressData",   type: "string" },
+                                        ZipCode:       { title: "ZipCode",       type: "string" },
+                                        City:          { title: "City",          type: "string" },
+                                        Website:       { title: "Website",       type: "string" },
+                                        Remarks:       { title: "Remarks",       type: "string" }
                                     },
-                                    {
-                                        type: "image_url",
-                                        image_url: {
-                                            url: `data:image/jpeg;base64,${imageBuffer}`
-                                        }
-                                    }
-                                ]
+                                    required: ["CompanyName","AcademicTitle","FirstName","MiddleName","LastName","EMail","JobTitle","Department","Phone","Mobile","Fax","AddressData","ZipCode","City","Website","Remarks"],
+                                    title: "BusinessCard",
+                                    type: "object",
+                                    additionalProperties: false
+                                },
+                                name: "business_card",
+                                strict: true
                             }
-                        ],
-                        temperature: 1
-                    }, { signal: controller.signal })
-                } catch (e) {
-                    clearTimeout(timeoutId);
-                    controller.abort();
-                    return WinJS.Promise.wrapError(e);
-                }
+                        }
+                    }),
+                    signal: controller.signal
+                }).then(function(res) { return res.text(); });
+
                 return toWinJSPromise(
-                    aiReq,
-                    function onCancel() { 
+                    fetchReq,
+                    function onCancel() {
                         clearTimeout(timeoutId);
-                        controller.abort(); 
+                        controller.abort();
                     }
-                ).then(function(response) {
+                ).then(function(responseText) {
                     clearTimeout(timeoutId);
                     try {
-                        var content = response.choices?.[0]?.message?.content || '';
-                        
-                        // strip code fences if present
-                        content = content.replace(/```json|```/g, '').trim();
-                                                
-                        if (!content) {
-                            throw new Error("AI returned empty response");
-                        }
-                        
-                        aiResult = JSON.parse(content);
+                        var data = JSON.parse(responseText);
+                        aiResult = JSON.parse(data.document_annotation);
                         that.successCount++;
                         Log.print(Log.l.info, "AI processing successful");
                     } catch (e) {
                         that.errorCount++;
                         err = e;
                         Log.print(Log.l.error, "Failed to parse AI response: " + e);
-                        Log.print(Log.l.error, "Response object: " + JSON.stringify(response));
+                        Log.print(Log.l.error, "Response text: " + responseText);
                     }
                     Log.ret(Log.l.trace);
                 }).then(null, function(error) {
@@ -219,6 +189,11 @@
             }).then(function insertResult() {
                 Log.call(Log.l.trace, `${logPrefix}.insertResult`);
                 if (!currentId || err) {
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
+                if (testing) {
+                    Log.print(Log.l.info, "TESTING mode: skipping database insert. AI result: " + JSON.stringify(aiResult));
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
