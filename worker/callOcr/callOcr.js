@@ -132,6 +132,9 @@
                 var promise = WinJS.xhr(options).then(function (response) {
                     responseText = response && response.responseText;
                     var url = response && response.getResponseHeader("Operation-Location");
+                    if (!url) {
+                        Log.print(Log.l.info, "callOcr request time: " + (Date.now() - ocrStartTime) + "ms");
+                    }
                     Log.print(Log.l.trace, "ocrPostRequest: OCR POST success! url=" + url);
                     return url;
                 }, function (errorResponse) {
