@@ -69,6 +69,7 @@
             var that = this;
             var pAktionStatus = "OCR_START" + this.ocrUuid; //"OCR_START" + this.ocrUuid;
             var responseText = null;
+            var ocrStartTime = 0;
             Log.call(Log.l.trace, "callOcr.");
             var err = null;
             that.lastAction = 'PRC_STARTCARDOCREX';
@@ -127,12 +128,14 @@
                     return WinJS.Promise.as();
                 }
                 that.lastAction = 'ocrPostRequest';
+                ocrStartTime = Date.now();
                 var promise = WinJS.xhr(options).then(function (response) {
                     responseText = response && response.responseText;
                     var url = response && response.getResponseHeader("Operation-Location");
                     Log.print(Log.l.trace, "ocrPostRequest: OCR POST success! url=" + url);
                     return url;
                 }, function (errorResponse) {
+                    Log.print(Log.l.error, "callOcr request time: " + (Date.now() - ocrStartTime) + "ms (failed)");
                     that.errorCount++;
                     Log.print(Log.l.error, "ocrPostRequest: error status=" + errorResponse.status + " statusText=" + errorResponse.statusText);
                     that.timestamp = new Date();
@@ -160,6 +163,7 @@
                             Log.print(Log.l.trace, "OCR GET status=" + myresultJson.status);
                             return handleResponseHeader(optionsUrl.url);
                         } else {
+                            Log.print(Log.l.info, "callOcr request time: " + (Date.now() - ocrStartTime) + "ms");
                             Log.print(Log.l.trace, "OCR GET success!");
                             responseText = response && response.responseText;
                             return WinJS.Promise.as();
