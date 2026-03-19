@@ -111,6 +111,7 @@
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const mistralStartTime = Date.now();
 
                 var fetchReq = fetch(that.endpoint, {
                     method: "POST",
@@ -167,6 +168,7 @@
                     }
                 ).then(function(responseText) {
                     clearTimeout(timeoutId);
+                    Log.print(Log.l.info, `Mistral request time: ${Date.now() - mistralStartTime}ms`);
                     try {
                         var data = JSON.parse(responseText);
                         aiResult = JSON.parse(data.document_annotation);
@@ -181,6 +183,7 @@
                     Log.ret(Log.l.trace);
                 }).then(null, function(error) {
                     clearTimeout(timeoutId);
+                    Log.print(Log.l.error, `Mistral request time: ${Date.now() - mistralStartTime}ms (failed)`);
                     that.errorCount++;
                     err = error;
                     Log.print(Log.l.error, "AI call failed: " + error);
