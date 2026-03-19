@@ -92,9 +92,11 @@
                     return WinJS.Promise.as();
                 }
                 var promise = new WinJS.Promise.timeout(0).then(function beginAnalyzeDocument() {
+                    const ocrStartTime = Date.now();
                     client.beginAnalyzeDocument("prebuilt-businessCard", data).then(function (poller) {
                         return poller.pollUntilDone();
                     }).then(function (result) {
+                        Log.print(Log.l.info, "Azure OCR request time: " + (Date.now() - ocrStartTime) + "ms");
                         var err, text;
                         if (result) {
                             try {
@@ -216,6 +218,7 @@
                             promise.cancel();
                         }
                     }, function (error) {
+                        Log.print(Log.l.error, "Azure OCR request time: " + (Date.now() - ocrStartTime) + "ms (failed)");
                         Log.print(Log.l.error, "beginAnalyzeDocument error!");
                         promise.cancel();
                     });
