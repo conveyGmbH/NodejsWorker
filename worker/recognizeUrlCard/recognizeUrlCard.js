@@ -12,6 +12,16 @@
     const puppeteer = require("puppeteer");
     const logPrefix = 'recognizeUrlCard';
 
+    function toWinJSPromise(nativePromise, onCancel) {
+        return new WinJS.Promise(function (complete, error /*, progress */) {
+            try {
+                nativePromise.then(complete, error);
+            } catch (e) {
+                error(e);
+            }
+        }, onCancel);
+    }
+
     var dispatcher = {
         startup: function () {
             Log.call(Log.l.trace, `${logPrefix}.startup`);
@@ -63,18 +73,35 @@
                 err = error;
                 Log.print(Log.l.error, "Error: " + error);
             }).then(function screenshot() {
-                Log.call(Log.l.trace, `${logPrefix}.step2`);
+                Log.call(Log.l.trace, `${logPrefix}.screenshot`);
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
 
-                // TODO: puppeteer pickup
-                this.screenshotData = 'TODO LMAO'
-                // Can we just save into a base64 encoded thing with puppeteer? Who knows.
-
-                Log.ret(Log.l.trace);
-                return WinJS.Promise.as();
+                return toWinJSPromise(
+                    puppeteer.launch().then(function(browser) {
+                        return browser.newPage().then(function(page) {
+                            return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
+                                return page.screenshot({ fullPage: true, encoding: 'base64' });
+                            }).then(function(image) {
+                                screenshotData = image;
+                                return browser.close();
+                            });
+                        }).then(function() {
+                            return browser.close();
+                        }).then(function(e) {
+                            return browser.close().then(function() {throw e;});
+                        });
+                    })
+                ).then(function() {
+                    Log.ret(Log.l.trace);   
+                }, function (error) {
+                    that.errorCount++;
+                    err = error;
+                    Log.print(Log.l.error, "Screenshot failed: " + error );
+                    Log.ret(Log.l.trace);
+                });
             }).then(function insertIntoDB() {
                 Log.call(Log.l.trace, `${logPrefix}.inserIntoDB`);
                 if (!currentId || err) {
@@ -87,6 +114,13 @@
 
                 Log.ret(Log.l.trace);
                 return WinJS.Promise.as();
+            }).then(function updateOnError() {
+                if (!err || !currentId) {
+                    return WinJS.Promise.as();
+                }
+                Log.call(Log.l.trace, `${logPrefix}.updateOnError`);
+                // TODO: Error handling...
+                Log.ret(Log.l.trace);
             }).then(function doRepeate() {
                 Log.call(Log.l.trace, `${logPrefix}.doRepeate`);
                 if (!currentId) {
