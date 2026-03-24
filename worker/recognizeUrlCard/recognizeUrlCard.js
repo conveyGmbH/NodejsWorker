@@ -32,12 +32,11 @@
             const uuid = UUID.create();
             this.urluuid = uuid.toString();
 
-            // TODO: initialize puppeteer?
-
             // TODO: white-/blacklist?
 
-            // TODO: initialize OData views here
-            // e.g. this._someView = AppData.getFormatView("SOME_VIEW", 0, false);
+            this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
+            this._doc1ImportCardscan_ODataView = AppData.getFormatView("DOC1IMPORT_CARDSCAN", 0, false);
+            this._synchronisationsjob_ODataView = AppData.getFormatView("Synchronisationsjob", 0, false);
 
             Log.ret(Log.l.trace);
             return WinJS.Promise.as();
@@ -51,15 +50,18 @@
             var currentId = null;
             var currentKontaktID = null;
             var currentUrl = null;
+            var importCardscanId = null;
             var screenshotData = null;
+            var screenshotDimensions = null;
+            var currentSynchronisationsjobData = null;
             var err = null;
 
             // Step 1: fetch next record to process
-            var ret = AppData.call("PRC_STARTURLOCR", {
+            var ret = AppData.call("PRC_STARTURLOCREX", {
                 pAktionStatus: pAktionStatus
             },
             function callSuccess(json) {
-                Log.print(Log.l.trace, "PRC_STARTURLOCR success");
+                Log.print(Log.l.trace, "PRC_STARTURLOCREX success");
                 if (json.d.results && json.d.results.length > 0) {
                     currentId = json.d.results[0].SynchronisationsjobID;
                     currentKontaktID = json.d.results[0].KontaktID;
@@ -83,15 +85,22 @@
                     puppeteer.launch().then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
+                                return page.evaluate(function() {
+                                    return {
+                                        width: document.documentElement.scrollWidth,
+                                        height: document.documentElement.scrollHeight
+                                    };
+                                });
+                            }).then(function(dimensions) {
+                                screenshotDimensions = dimensions;
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
-                                return browser.close();
                             });
                         }).then(function() {
                             return browser.close();
-                        }).then(function(e) {
-                            return browser.close().then(function() {throw e;});
+                        }, function(e) {
+                            return browser.close().then(function() { throw e; });
                         });
                     })
                 ).then(function() {
@@ -102,25 +111,110 @@
                     Log.print(Log.l.error, "Screenshot failed: " + error );
                     Log.ret(Log.l.trace);
                 });
-            }).then(function insertIntoDB() {
-                Log.call(Log.l.trace, `${logPrefix}.inserIntoDB`);
+            }).then(function insertImport_Cardscan() {
+                Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
 
-                // TODO: Insert new Import_Cardscan row
-                // TODO: Insert new Doc1Importcardscan row with imagedata (base64)
+                return that._importCardscan_ODataView.insert(
+                    function insertSuccess(response) {
+                        importCardscanId = response.d.IMPORT_CARDSCANVIEWID;
+                        Log.print(Log.l.info, "Import_Cardscan insert success, ID: " + importCardscanId);
+                    },
+                    function insertError(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Error: " + error);                    },
+                    {
+                        KontaktID: currentKontaktID,
+                        Button: "OCR_TODO"
+                    }
+                ).then(function() {
+                    Log.ret(Log.l.trace);
+                })
 
-                Log.ret(Log.l.trace);
-                return WinJS.Promise.as();
-            }).then(function updateOnError() {
+            }).then(function insertDOC1() {
+                Log.call(Log.l.trace, `${logPrefix}.insertDOC1`);
+                if (!currentId || err || !importCardscanId) {
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                };
+
+                Log.print(Log.l.info, "DOC1 insert: importCardscanId=" + importCardscanId + " screenshotDimensions=" + JSON.stringify(screenshotDimensions));
+
+                // TODO: This is currently a temporary manual request because idk i couldn't get it to work with the ODATA API... not usable like this.
+                var url = "https://deimos.convey.de/odata_online/DOC1IMPORT_CARDSCAN_ODataVIEW";
+                var options = AppData.initXhrOptions("POST", url, false);
+                options.headers["Accept"] = "application/json";
+                options.headers["Content-Type"] = "application/json";
+                options.data = JSON.stringify({
+                    DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
+                    wFormat: 3,
+                    ColorType: 11,
+                    ulWidth: screenshotDimensions.width,
+                    ulHeight: screenshotDimensions.height,
+                    ulDpm: 0,
+                    szOriFileNameDOC1: "card.jpg",
+                    DocContentDOCCNT1: screenshotData,
+                    ContentEncoding: 4096
+                });
+                return WinJS.xhr(options).then(
+                    function() {
+                        Log.print(Log.l.info, "DOC1 insert success");
+                        Log.ret(Log.l.trace);
+                    },
+                    function(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "DOC1 insert failed: " + error);
+                        Log.ret(Log.l.trace);
+                    }
+                );
+            }).then(function selectForUpdateOnError() {
                 if (!err || !currentId) {
                     return WinJS.Promise.as();
                 }
+                Log.call(Log.l.trace, `${logPrefix}.selectForUpdateOnError`);
+                return that._synchronisationsjob_ODataView.selectById(
+                    function selectSuccess(json) {
+                        Log.print(Log.l.info, "selectForUpdateOnError select success.");
+                        if (json) {
+                            currentSynchronisationsjobData = json.d;
+                        }
+                    },
+                    function selectError(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Error: " + error);
+                    },
+                    currentId
+                ).then(function() {
+                    Log.ret(Log.l.trace);
+                });
+            }).then(function updateOnError() {
+                if (!currentSynchronisationsjobData || !currentId) {
+                    return WinJS.Promise.as();
+                }
                 Log.call(Log.l.trace, `${logPrefix}.updateOnError`);
-                // TODO: Error handling...
-                Log.ret(Log.l.trace);
+                currentSynchronisationsjobData.FollowUp = 'URL_ERROR';
+                currentSynchronisationsjobData.ClientID = null;
+                return that._synchronisationsjob_ODataView.update(
+                    function updateSuccess() {
+                        Log.print(Log.l.info, "Successfully updated Synchronisationsjob on Error.");
+                    },
+                    function updateError(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Error: " + error);
+                    },
+                    currentId,
+                    currentSynchronisationsjobData
+                ).then(function() {
+                    Log.ret(Log.l.trace);
+                })
+
             }).then(function doRepeate() {
                 Log.call(Log.l.trace, `${logPrefix}.doRepeate`);
                 if (!currentId) {
