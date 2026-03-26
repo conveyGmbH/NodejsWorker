@@ -145,33 +145,56 @@
                 Log.print(Log.l.info, "DOC1 insert: importCardscanId=" + importCardscanId + " screenshotDimensions=" + JSON.stringify(screenshotDimensions));
 
                 // TODO: This is currently a temporary manual request because idk i couldn't get it to work with the ODATA API... not usable like this.
-                var url = "https://deimos.convey.de/odata_online/DOC1IMPORT_CARDSCAN_ODataVIEW";
-                var options = AppData.initXhrOptions("POST", url, false);
-                options.headers["Accept"] = "application/json";
-                options.headers["Content-Type"] = "application/json";
-                options.data = JSON.stringify({
-                    DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
-                    wFormat: 3,
-                    ColorType: 11,
-                    ulWidth: screenshotDimensions.width,
-                    ulHeight: screenshotDimensions.height,
-                    ulDpm: 0,
-                    szOriFileNameDOC1: "card.jpg",
-                    DocContentDOCCNT1: screenshotData,
-                    ContentEncoding: 4096
-                });
-                return WinJS.xhr(options).then(
-                    function() {
-                        Log.print(Log.l.info, "DOC1 insert success");
-                        Log.ret(Log.l.trace);
+                // var url = "https://deimos.convey.de/odata_online/DOC1IMPORT_CARDSCAN_ODataVIEW";
+                // var options = AppData.initXhrOptions("POST", url, false);
+                // options.headers["Accept"] = "application/json";
+                // options.headers["Content-Type"] = "application/json";
+                // options.data = JSON.stringify({
+                //     DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
+                //     wFormat: 3,
+                //     ColorType: 11,
+                //     ulWidth: screenshotDimensions.width,
+                //     ulHeight: screenshotDimensions.height,
+                //     ulDpm: 0,
+                //     szOriFileNameDOC1: "card.jpg",
+                //     DocContentDOCCNT1: screenshotData,
+                //     ContentEncoding: 4096
+                // });
+                // return WinJS.xhr(options).then(
+                //     function() {
+                //         Log.print(Log.l.info, "DOC1 insert success");
+                //         Log.ret(Log.l.trace);
+                //     },
+                //     function(error) {
+                //         that.errorCount++;
+                //         err = error;
+                //         Log.print(Log.l.error, "DOC1 insert failed: " + error);
+                //         Log.ret(Log.l.trace);
+                //     }
+                // );
+
+                return that._doc1ImportCardscan_ODataView.insertWithId(
+                    function insertSuccess(response) {
+                        Log.print(Log.l.info, "DOC1 Insert completed.");
                     },
-                    function(error) {
+                    function insertError(error) {
                         that.errorCount++;
                         err = error;
-                        Log.print(Log.l.error, "DOC1 insert failed: " + error);
-                        Log.ret(Log.l.trace);
+                        Log.print(Log.l.error, "Error: " + error); 
+                    },
+                    {
+                        DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
+                        wFormat: 3,
+                        ColorType: 11,
+                        ulWidth: screenshotDimensions.width,
+                        ulHeight: screenshotDimensions.height,
+                        ulDpm: 0,
+                        szOriFileNameDOC1: "card.jpg",
+                        DocContentDOCCNT1: screenshotData,
+                        ContentEncoding: 4096
                     }
-                );
+
+                )
             }).then(function selectForUpdateOnError() {
                 if (!err || !currentId) {
                     return WinJS.Promise.as();
