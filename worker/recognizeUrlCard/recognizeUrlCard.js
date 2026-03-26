@@ -195,14 +195,14 @@
                     }
 
                 )
-            }).then(function selectForUpdateOnError() {
-                if (!err || !currentId) {
+            }).then(function selectForUpdate() {
+                if (err || !currentId) {
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.selectForUpdateOnError`);
+                Log.call(Log.l.trace, `${logPrefix}.selectForUpdate`);
                 return that._synchronisationsjob_ODataView.selectById(
                     function selectSuccess(json) {
-                        Log.print(Log.l.info, "selectForUpdateOnError select success.");
+                        Log.print(Log.l.info, "selectForUpdate select success.");
                         if (json) {
                             currentSynchronisationsjobData = json.d;
                         }
@@ -216,16 +216,20 @@
                 ).then(function() {
                     Log.ret(Log.l.trace);
                 });
-            }).then(function updateOnError() {
+            }).then(function updateSyncJob() {
                 if (!currentSynchronisationsjobData || !currentId) {
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.updateOnError`);
-                currentSynchronisationsjobData.FollowUp = 'URL_ERROR';
+                Log.call(Log.l.trace, `${logPrefix}.updateSyncJob`);
+                if (!err) {
+                    currentSynchronisationsjobData.FollowUp = 'URL_DONE';
+                } else {
+                    currentSynchronisationsjobData.FollowUp = 'URL_ERROR';
+                }
                 currentSynchronisationsjobData.ClientID = null;
                 return that._synchronisationsjob_ODataView.update(
                     function updateSuccess() {
-                        Log.print(Log.l.info, "Successfully updated Synchronisationsjob on Error.");
+                        Log.print(Log.l.info, "Successfully updated Synchronisationsjob to Status: " + currentSynchronisationsjobData.FollowUp);
                     },
                     function updateError(error) {
                         that.errorCount++;
