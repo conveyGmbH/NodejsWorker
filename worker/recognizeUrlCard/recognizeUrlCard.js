@@ -10,6 +10,8 @@
 
     const UUID = require("uuid-js");
     const puppeteer = require("puppeteer");
+    const fs = require("fs");
+    const path = require("path");
     const logPrefix = 'recognizeUrlCard';
 
     function toWinJSPromise(nativePromise, onCancel) {
@@ -43,6 +45,7 @@
         },
 
         activity: function () {
+            const testing = process.env.TESTING
             Log.call(Log.l.trace, `${logPrefix}.activity`);
             var that = this;
             const pAktionStatus = `URL_START-${this.urluuid}`;
@@ -96,6 +99,13 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
+                                if (testing) {
+                                    const debugDir = path.join(__dirname, 'debug');
+                                    fs.mkdirSync(debugDir, { recursive: true });
+                                    const filename = path.join(debugDir, `${currentId}_${Date.now()}.png`);
+                                    fs.writeFileSync(filename, Buffer.from(image, 'base64'));
+                                    Log.print(Log.l.info, "Debug screenshot saved: " + filename);
+                                }
                             });
                         }).then(function() {
                             return browser.close();
