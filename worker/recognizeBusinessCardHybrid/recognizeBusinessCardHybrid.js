@@ -38,7 +38,8 @@
         2. Identify the company name, job title, email addresses, phone numbers (work and mobile), fax numbers, website URLs, and address fields (street, city, postal code).
         3. Strip out any OCR noise or UI navigation junk like "Scan Badge", "Tap here", "Number of Scans", or "Atrás".
         4. If the data is clearly NOT a business card (like an eBay pickup code or a grocery receipt), return null for all name fields.
-        5. If there are multiple values for a field (e.g., two phone numbers), join them with a semicolon (e.g., '+49 123; +49 456').
+        5. If there are multiple values for a field (e.g., two phone numbers), return only the first value.
+        6. If names are missing, use the email prefix to deduce them (e.g., 'john.doe@company.com' -> FirstName: John, LastName: Doe).
 
         Output:
         Return ONLY a valid JSON object with these EXACT keys:
