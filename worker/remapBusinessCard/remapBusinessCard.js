@@ -312,11 +312,11 @@
                     return WinJS.Promise.as()
                 };
                 if (!err) {
-                    if (that.successCount >= 50) {
-                        Log.print(Log.l.info, "Batch cap reached, stopping");
-                        Log.ret(Log.l.trace);
-                        return WinJS.Promise.as();
-                    }
+                    // if (that.successCount >= 50) {
+                    //     Log.print(Log.l.info, "Batch cap reached, stopping");
+                    //     Log.ret(Log.l.trace);
+                    //     return WinJS.Promise.as();
+                    // }
                     Log.print(Log.l.info, "Continuing loop...");
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.timeout(that.waitTimeMs).then(function () {
