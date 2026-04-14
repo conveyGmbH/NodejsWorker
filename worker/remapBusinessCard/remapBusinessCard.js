@@ -171,7 +171,14 @@
                         response_format: { type: "json_object" }
                     }),
                     signal: controller.signal
-                }).then(function(res) { return res.text(); });
+                }).then(function(res) { 
+                    if (!res.ok) {
+                        return res.text().then(function(body) {
+                            throw new Error("HTTP " + res.status + ": " + body);
+                        });
+                    }
+                    return res.text();
+                });
 
                 return toWinJSPromise(
                     fetchReq,
