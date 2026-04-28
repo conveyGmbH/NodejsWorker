@@ -188,7 +188,6 @@
                     }
                 ).then(function(responseText) {
                     clearTimeout(timeoutId);
-                    Log.print(Log.l.info, `Azure OpenAI request time: ${Date.now() - aiStartTime}ms`);
                     try {
                         var response = JSON.parse(responseText);
                         var usage = response.usage;
@@ -260,6 +259,8 @@
                     },
                     function insertError(e) {
                         Log.print(Log.l.error, "ImportCardScanBulk insert callback error: " + (e && (e.statusText || e.status) || e));
+                        that.errorCount++;
+                        err = e;
                     },
                     {
                         IMPORT_CARDSCANID: currentId,
