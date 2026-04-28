@@ -11,7 +11,7 @@
     const UUID = require("uuid-js");
     const b64js = require("base64-js");
     const logPrefix = 'recognizeBusinessCardAI'
-    const { AzureOpenAI } = require('openai');
+    const fs = require('fs');
 
     function toWinJSPromise(nativePromise, onCancel) {
         return new WinJS.Promise(function (complete, error /*, progress */) {
@@ -35,16 +35,8 @@
             this.aiocrUuid = uuid.toString();
             
             // Initialize Azure AI Config
-            const azureOptions = {
-                endpoint: process.env.AZURE_AI_ENDPOINT,
-                apiKey: process.env.AZURE_AI_APIKEY,
-                deployment: "gpt-4o",
-                apiVersion: "2024-04-01-preview"
-            };
-            this.azureClient = new AzureOpenAI(azureOptions);
-            
-            // Store LLM Prompt
-            this.systemPrompt = `Extract all text from this image. Insert the result in appropriate fields within this JSON Object: {CompanyName: '', AcademicTitle: '', FirstName: '', MiddleName: '', LastName: '', EMail: '', JobTitle: '', Department: '', Industry: '', Phone: '', Mobile: '', Fax: '', AddressData: '', Website: ''}; If a field is not present, set its value to null. Only use these fields and do not add any others. Only return the filled JSON without any extra text. If a full name is present, intelligently split it into "first name" and "last name" using common naming conventions.`;
+            this.endpoint = "https://ki-ocr-layer.services.ai.azure.com/providers/mistral/azure/ocr";
+            this.apiKey = process.env.AZURE_AI_APIKEY;
             
             // Initialize your OData views
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
@@ -55,6 +47,7 @@
         },
 
         activity: function () {
+            const testing = process.env.TESTING
             Log.call(Log.l.trace, `${logPrefix}.activity`);
             var that = this;
             const pAktionStatus = `BCI_START-${this.aiocrUuid}`;
@@ -82,6 +75,25 @@
                     }
                 } else {
                     Log.print(Log.l.info, "No rows to process");
+                    if (testing) {
+                        Log.print(Log.l.info, "Setting test ID and test BLOB!");
+                        currentId = 14600;
+                        var fileBuffer = fs.readFileSync("/Users/emi/Documents/gitProjects/NodejsWorker/debug/card.txt");
+                        var doccnt1 = fileBuffer.toString(); // Convert Buffer to string
+                        if (doccnt1) {
+                            // Try Windows line endings first, then Unix
+                            var sub = doccnt1.search("\r\n\r\n");
+                            if (sub < 0) {
+                                sub = doccnt1.search("\n\n");
+                            }
+                            Log.print(Log.l.info, "Header separator position: " + sub);
+                            if (sub >= 0) {
+                                var headerLength = (doccnt1.indexOf("\r\n\r\n") >= 0) ? 4 : 2;
+                                imageBuffer = doccnt1.substr(sub + headerLength).replace(/\s+/g, '');
+                                Log.print(Log.l.info, "Image buffer length: " + imageBuffer.length);
+                            }
+                        }
+                    }
                 };
             }, 
             function callStartError (error) { // Error Callback
@@ -95,59 +107,77 @@
                     return WinJS.Promise.as()
                 };
 
-                Log.print(Log.l.info, "Calling Azure OpenAI...");
+                Log.print(Log.l.info, "Calling Mistral Document AI...");
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const mistralStartTime = Date.now();
 
-                var aiReq;
-                try {
-                    aiReq = that.azureClient.chat.completions.create({
-                        model: "gpt-4o",
-                        max_tokens: 1024,
-                        messages: [
-                            {
-                                role: "user",
-                                content: [
-                                    {
-                                        type: "text",
-                                        text: that.systemPrompt
+                var fetchReq = fetch(that.endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${that.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-document-ai-2512",
+                        document: {
+                            type: "image_url",
+                            image_url: `data:image/jpeg;base64,${imageBuffer}`
+                        },
+                        document_annotation_format: {
+                            type: "json_schema",
+                            json_schema: {
+                                schema: {
+                                    properties: {
+                                        CompanyName:   { title: "CompanyName",   type: "string" },
+                                        AcademicTitle: { title: "AcademicTitle", type: "string" },
+                                        FirstName:     { title: "FirstName",     type: "string" },
+                                        MiddleName:    { title: "MiddleName",    type: "string" },
+                                        LastName:      { title: "LastName",      type: "string" },
+                                        EMail:         { title: "EMail",         type: "string" },
+                                        JobTitle:      { title: "JobTitle",      type: "string" },
+                                        Department:    { title: "Department",    type: "string" },
+                                        Phone:         { title: "Phone",         type: "string" },
+                                        Mobile:        { title: "Mobile",        type: "string" },
+                                        Fax:           { title: "Fax",           type: "string" },
+                                        AddressData:   { title: "AddressData",   type: "string" },
+                                        ZipCode:       { title: "ZipCode",       type: "string" },
+                                        City:          { title: "City",          type: "string" },
+                                        Website:       { title: "Website",       type: "string" },
+                                        Remarks:       { title: "Remarks",       type: "string" }
                                     },
-                                    {
-                                        type: "image_url",
-                                        image_url: {
-                                            url: `data:image/jpeg;base64,${imageBuffer}`
-                                        }
-                                    }
-                                ]
+                                    required: ["CompanyName","AcademicTitle","FirstName","MiddleName","LastName","EMail","JobTitle","Department","Phone","Mobile","Fax","AddressData","ZipCode","City","Website","Remarks"],
+                                    title: "BusinessCard",
+                                    type: "object",
+                                    additionalProperties: false
+                                },
+                                name: "business_card",
+                                strict: true
                             }
-                        ],
-                        temperature: 0
-                    }, { signal: controller.signal })
-                } catch (e) {
-                    clearTimeout(timeoutId);
-                    controller.abort();
-                    return WinJS.Promise.wrapError(e);
-                }
+                        }
+                    }),
+                    signal: controller.signal
+                }).then(function(res) { return res.text(); });
+
                 return toWinJSPromise(
-                    aiReq,
-                    function onCancel() { 
+                    fetchReq,
+                    function onCancel() {
                         clearTimeout(timeoutId);
-                        controller.abort(); 
+                        controller.abort();
                     }
-                ).then(function(response) {
+                ).then(function(responseText) {
                     clearTimeout(timeoutId);
                     try {
-                        var content = response.choices?.[0]?.message?.content || '';
-                        // strip code fences if present
-                        content = content.replace(/```json|```/g, '').trim();
-                        aiResult = JSON.parse(content);
+                        var data = JSON.parse(responseText);
+                        aiResult = JSON.parse(data.document_annotation);
                         that.successCount++;
                         Log.print(Log.l.info, "AI processing successful");
                     } catch (e) {
                         that.errorCount++;
                         err = e;
                         Log.print(Log.l.error, "Failed to parse AI response: " + e);
+                        Log.print(Log.l.error, "Response text: " + responseText);
                     }
                     Log.ret(Log.l.trace);
                 }).then(null, function(error) {
@@ -160,6 +190,11 @@
             }).then(function insertResult() {
                 Log.call(Log.l.trace, `${logPrefix}.insertResult`);
                 if (!currentId || err) {
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
+                if (testing) {
+                    Log.print(Log.l.info, "TESTING mode: skipping database insert. AI result: " + JSON.stringify(aiResult));
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
@@ -183,7 +218,9 @@
                     kv('Faxes', aiResult.Fax),
                     kv('Emails', aiResult.EMail),
                     kv('Websites', aiResult.Website),
-                    kv('streetAddress', aiResult.AddressData)
+                    kv('streetAddress', aiResult.AddressData),
+                    kv('ZipCode', aiResult.ZipCode),
+                    kv('city', aiResult.City)
                 );
                 var ocrData = lines.filter(Boolean).join('\n');
 
