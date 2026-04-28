@@ -259,6 +259,7 @@
                     },
                     function insertError(e) {
                         Log.print(Log.l.error, "ImportCardScanBulk insert callback error: " + (e && (e.statusText || e.status) || e));
+                        that.errorCount++;
                         err = e;
                     },
                     {
