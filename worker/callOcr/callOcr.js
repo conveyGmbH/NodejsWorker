@@ -437,7 +437,7 @@
                 Log.ret(Log.l.trace);
                 return promise;
             }).then(function selectImportCardscan() {
-                if (!importcardscanid || err) {
+                if (!importcardscanid || !err && !bulkError) {
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "selectImportCardscan: importcardscanid=" + importcardscanid);
