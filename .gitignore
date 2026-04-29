@@ -73,5 +73,5 @@ libman.json
 #MacOS
 .DS_Store
 
-#Debug Folder
-/debug/
+#Debug Folders
+debug/
