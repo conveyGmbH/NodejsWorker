@@ -39,6 +39,7 @@
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._doc1ImportCardscan_ODataView = AppData.getFormatView("DOC1IMPORT_CARDSCAN", 0, false);
             this._synchronisationsjob_ODataView = AppData.getFormatView("Synchronisationsjob", 0, false);
+            this._importBarcodeScan_ODataView = AppData.getFormatView("ImportBarcodeScan", 0, false);
 
             Log.ret(Log.l.trace);
             return WinJS.Promise.as();
@@ -52,12 +53,15 @@
 
             var currentId = null;
             var currentKontaktID = null;
+            var currentImportBarcodeScanID = null;
             var currentUrl = null;
             var importCardscanId = null;
             var screenshotData = null;
             var screenshotDimensions = null;
+            var currentImportBarcodeScanData = null;
             var currentSynchronisationsjobData = null;
             var err = null;
+            var ActivityStart = null;
 
             // Step 1: fetch next record to process
             var ret = AppData.call("PRC_STARTURLOCREX", {
@@ -69,6 +73,7 @@
                     currentId = json.d.results[0].SynchronisationsjobID;
                     currentKontaktID = json.d.results[0].KontaktID;
                     currentUrl = json.d.results[0].Request_Barcode;
+                    currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
                 } else {
                     Log.print(Log.l.info, "No rows to process");
                 }
@@ -79,6 +84,7 @@
                 Log.print(Log.l.error, "Error: " + error);
             }).then(function screenshot() {
                 Log.call(Log.l.trace, `${logPrefix}.screenshot`);
+                ActivityStart = Date.now();
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -154,35 +160,6 @@
 
                 Log.print(Log.l.info, "DOC1 insert: importCardscanId=" + importCardscanId + " screenshotDimensions=" + JSON.stringify(screenshotDimensions));
 
-                // TODO: This is currently a temporary manual request because idk i couldn't get it to work with the ODATA API... not usable like this.
-                // var url = "https://deimos.convey.de/odata_online/DOC1IMPORT_CARDSCAN_ODataVIEW";
-                // var options = AppData.initXhrOptions("POST", url, false);
-                // options.headers["Accept"] = "application/json";
-                // options.headers["Content-Type"] = "application/json";
-                // options.data = JSON.stringify({
-                //     DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
-                //     wFormat: 3,
-                //     ColorType: 11,
-                //     ulWidth: screenshotDimensions.width,
-                //     ulHeight: screenshotDimensions.height,
-                //     ulDpm: 0,
-                //     szOriFileNameDOC1: "card.jpg",
-                //     DocContentDOCCNT1: screenshotData,
-                //     ContentEncoding: 4096
-                // });
-                // return WinJS.xhr(options).then(
-                //     function() {
-                //         Log.print(Log.l.info, "DOC1 insert success");
-                //         Log.ret(Log.l.trace);
-                //     },
-                //     function(error) {
-                //         that.errorCount++;
-                //         err = error;
-                //         Log.print(Log.l.error, "DOC1 insert failed: " + error);
-                //         Log.ret(Log.l.trace);
-                //     }
-                // );
-
                 return that._doc1ImportCardscan_ODataView.insertWithId(
                     function insertSuccess(response) {
                         Log.print(Log.l.info, "DOC1 Insert completed.");
@@ -205,6 +182,47 @@
                     }
 
                 )
+            }).then(function selectImportBarcodeScan() {
+                if (err || !currentId) {
+                    return WinJS.Promise.as();
+                }
+                Log.call(Log.l.trace, `${logPrefix}.selectImportBarcodeScan`);
+                return that._importBarcodeScan_ODataView.selectById(
+                    function selectSuccess(json) {
+                        Log.print(Log.l.info, "selectImportBarcodeScan select success.");
+                        if (json) {
+                            currentImportBarcodeScanData = json.d;
+                        }
+                    },
+                    function selectError(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Error: " + error);
+                    },
+                    currentImportBarcodeScanID
+                ).then(function() {
+                    Log.ret(Log.l.trace);
+                });
+            }).then(function touchImportBarcodeScan() {
+                if (err || !currentId) {
+                    return WinJS.Promise.as();
+                }
+                Log.call(Log.l.trace, `${logPrefix}.touchImportBarcodeScan`);
+                currentImportBarcodeScanData.Kommentar = currentImportBarcodeScanData.Kommentar || 'OK';
+                return that._importBarcodeScan_ODataView.update(
+                    function updateSuccess() {
+                        Log.print(Log.l.info, "Successfully touched importBarcodeScanID " + currentImportBarcodeScanID);
+                    },
+                    function updateError(error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Error: " + error);
+                    },
+                    currentImportBarcodeScanID,
+                    currentImportBarcodeScanData
+                ).then(function() {
+                    Log.ret(Log.l.trace);
+                })
             }).then(function selectForUpdate() {
                 if (err || !currentId) {
                     return WinJS.Promise.as();
@@ -249,6 +267,7 @@
                     currentId,
                     currentSynchronisationsjobData
                 ).then(function() {
+                    Log.print(Log.l.info, "Time to finish: " + (Date.now() - ActivityStart));
                     Log.ret(Log.l.trace);
                 })
 
