@@ -90,12 +90,9 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-
+                Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
                 return toWinJSPromise(
-                    puppeteer.launch({
-                        executablePath: puppeteer.executablePath('chrome-headless-shell'),
-                        args: ['--no-sandbox']
-                    }).then(function(browser) {
+                    puppeteer.launch().then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
                                 return page.evaluate(function() {
@@ -111,10 +108,8 @@
                                 screenshotData = image;
                             });
                         }).then(function() {
-                            Log.print(Log.l.info, "Screenshot successful, ID " + currentId);
                             return browser.close();
                         }, function(e) {
-                            Log.print(Log.l.info, "Screenshot failed, ID " + currentId);
                             return browser.close().then(function() { throw e; });
                         });
                     })
@@ -124,6 +119,7 @@
                     that.errorCount++;
                     err = error;
                     Log.print(Log.l.error, "Screenshot failed: " + error );
+                    Log.print(Log.l.error, "Stack: " + error.stack);
                     Log.ret(Log.l.trace);
                 });
             }).then(function insertImport_Cardscan() {
