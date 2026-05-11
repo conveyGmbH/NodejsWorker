@@ -74,6 +74,7 @@
                     currentKontaktID = json.d.results[0].KontaktID;
                     currentUrl = json.d.results[0].Request_Barcode;
                     currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
+                    Log.print(Log.l.trace, "Found a row: ID " + currentId);
                 } else {
                     Log.print(Log.l.info, "No rows to process");
                 }
@@ -108,17 +109,12 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
-                                if (testing) {
-                                    const debugDir = path.join(__dirname, 'debug');
-                                    fs.mkdirSync(debugDir, { recursive: true });
-                                    const filename = path.join(debugDir, `${currentId}_${Date.now()}.png`);
-                                    fs.writeFileSync(filename, Buffer.from(image, 'base64'));
-                                    Log.print(Log.l.info, "Debug screenshot saved: " + filename);
-                                }
                             });
                         }).then(function() {
+                            Log.print(Log.l.trace, "Screenshot successful, ID " + currentId);
                             return browser.close();
                         }, function(e) {
+                            Log.print(Log.l.trace, "Screenshot failed, ID " + currentId);
                             return browser.close().then(function() { throw e; });
                         });
                     })
