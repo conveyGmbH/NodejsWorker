@@ -111,10 +111,10 @@
                                 screenshotData = image;
                             });
                         }).then(function() {
-                            Log.print(Log.l.trace, "Screenshot successful, ID " + currentId);
+                            Log.print(Log.l.info, "Screenshot successful, ID " + currentId);
                             return browser.close();
                         }, function(e) {
-                            Log.print(Log.l.trace, "Screenshot failed, ID " + currentId);
+                            Log.print(Log.l.info, "Screenshot failed, ID " + currentId);
                             return browser.close().then(function() { throw e; });
                         });
                     })
