@@ -91,7 +91,10 @@
                 }
 
                 return toWinJSPromise(
-                    puppeteer.launch().then(function(browser) {
+                    puppeteer.launch({
+                        executablePath: puppeteer.executablePath('chrome-headless-shell'),
+                        args: ['--no-sandbox']
+                    }).then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
                                 return page.evaluate(function() {
