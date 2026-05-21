@@ -93,10 +93,10 @@
                 Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
                 return toWinJSPromise(
                     puppeteer.launch({
-                        args: ['--no-sandbox', 'disable-setuid-sandbox', '--disable-dev-shm-usage']
+                        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
-                            return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
+                            return page.goto(currentUrl, { waitUntil: 'load' }).then(function() {
                                 return page.evaluate(function() {
                                     return {
                                         width: document.documentElement.scrollWidth,
@@ -108,6 +108,7 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
+                                Log.print(Log.l.trace, "Screenshot success")
                             });
                         }).then(function() {
                             return browser.close();
