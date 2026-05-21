@@ -108,7 +108,7 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
-                                Log.print(Log.l.trace, "Screenshot success")
+                                console.log('Screenshot success')
                             });
                         }).then(function() {
                             return browser.close();
