@@ -93,7 +93,7 @@
                 Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
                 return toWinJSPromise(
                     puppeteer.launch({
-                        args: ['--no-sandbox', 'disable-setuid-sandbox']
+                        args: ['--no-sandbox', 'disable-setuid-sandbox', '--disable-dev-shm-usage']
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.goto(currentUrl, { waitUntil: 'networkidle2' }).then(function() {
