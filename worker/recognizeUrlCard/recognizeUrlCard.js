@@ -96,7 +96,9 @@
                         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
-                            return page.goto(currentUrl, { waitUntil: 'load' }).then(function() {
+                            return page.setViewport({ width: 1280, height: 900}).then(function (){
+                                return page.goto(currentUrl, { waitUntil: 'load' })
+                            }).then(function() {
                                 return page.evaluate(function() {
                                     return {
                                         width: document.documentElement.scrollWidth,
@@ -108,6 +110,11 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
+                                if (testing) {
+                                    const debugPath = path.join(__dirname, 'debug', 'screenshot.png');
+                                    fs.writeFileSync(debugPath, Buffer.from(image, 'base64'));
+                                    console.log('Debug screenshot saved to ' + debugPath);
+                                }
                                 console.log('Screenshot success')
                             });
                         }).then(function() {
@@ -131,6 +138,11 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping insertImport_Cardscan step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
 
                 return that._importCardscan_ODataView.insert(
                     function insertSuccess(response) {
@@ -140,7 +152,8 @@
                     function insertError(error) {
                         that.errorCount++;
                         err = error;
-                        Log.print(Log.l.error, "Error: " + error);                    },
+                        Log.print(Log.l.error, "Error: " + error);
+                    },
                     {
                         KontaktID: currentKontaktID,
                         Button: "OCR_TODO"
@@ -155,6 +168,11 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 };
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping insertDOC1 insert step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
 
                 Log.print(Log.l.info, "DOC1 insert: importCardscanId=" + importCardscanId + " screenshotDimensions=" + JSON.stringify(screenshotDimensions));
 
@@ -179,12 +197,20 @@
                         ContentEncoding: 4096
                     }
 
-                )
+                ).then(function () {
+                    Log.ret(Log.l.trace);
+                })
             }).then(function selectImportBarcodeScan() {
+                Log.call(Log.l.trace, `${logPrefix}.selectImportBarcodeScan`);
                 if (err || !currentId) {
+                    Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.selectImportBarcodeScan`);
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping selectImportBarcodeScan step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
                 return that._importBarcodeScan_ODataView.selectById(
                     function selectSuccess(json) {
                         Log.print(Log.l.info, "selectImportBarcodeScan select success.");
@@ -202,10 +228,16 @@
                     Log.ret(Log.l.trace);
                 });
             }).then(function touchImportBarcodeScan() {
+                Log.call(Log.l.trace, `${logPrefix}.touchImportBarcodeScan`);
                 if (err || !currentId) {
+                    Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.touchImportBarcodeScan`);
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping touchImportBarcodeScan step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
                 currentImportBarcodeScanData.Kommentar = currentImportBarcodeScanData.Kommentar || 'OK';
                 return that._importBarcodeScan_ODataView.update(
                     function updateSuccess() {
@@ -222,10 +254,16 @@
                     Log.ret(Log.l.trace);
                 })
             }).then(function selectForUpdate() {
+                Log.call(Log.l.trace, `${logPrefix}.selectForUpdate`);
                 if (err || !currentId) {
+                    Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.selectForUpdate`);
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping selectForUpdate step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
                 return that._synchronisationsjob_ODataView.selectById(
                     function selectSuccess(json) {
                         Log.print(Log.l.info, "selectForUpdate select success.");
@@ -243,10 +281,16 @@
                     Log.ret(Log.l.trace);
                 });
             }).then(function updateSyncJob() {
+                Log.call(Log.l.trace, `${logPrefix}.updateSyncJob`);
                 if (!currentSynchronisationsjobData || !currentId) {
+                    Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                Log.call(Log.l.trace, `${logPrefix}.updateSyncJob`);
+                if (testing) {
+                    Log.print(Log.l.trace, "Testing, skipping updateSyncJob step");
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
+                }
                 if (!err) {
                     currentSynchronisationsjobData.FollowUp = 'URL_DONE';
                 } else {
