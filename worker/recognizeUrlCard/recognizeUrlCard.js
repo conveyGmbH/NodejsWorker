@@ -75,6 +75,12 @@
                     currentUrl = json.d.results[0].Request_Barcode;
                     currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
                     Log.print(Log.l.trace, "Found a row: ID " + currentId);
+                } else if (testing) {
+                    Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
+                    currentId = -1;
+                    currentUrl = 'https://cards.boschmanufacturingsolutions.com/profile/ac9c7fe5-7427-4ef7-9562-2f0931459f44/qrcode';
+                    currentKontaktID = -1;
+                    currentImportBarcodeScanID = -1;
                 } else {
                     Log.print(Log.l.info, "No rows to process");
                 }
@@ -96,7 +102,7 @@
                         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
-                            return page.setViewport({ width: 1280, height: 900}).then(function (){
+                            return page.setViewport({ width: 500, height: 1200}).then(function (){
                                 return page.goto(currentUrl, { waitUntil: 'load' })
                             }).then(function() {
                                 return page.evaluate(function() {
