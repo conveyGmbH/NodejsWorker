@@ -99,7 +99,7 @@
                 Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
                 return toWinJSPromise(
                     puppeteer.launch({
-                        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                        args: ['--disable-dev-shm-usage']
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.setViewport({ width: 500, height: 1200}).then(function (){
