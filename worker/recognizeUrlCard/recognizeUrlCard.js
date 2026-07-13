@@ -103,7 +103,7 @@
                     }).then(function(browser) {
                         return browser.newPage().then(function(page) {
                             return page.setViewport({ width: 500, height: 1200}).then(function (){
-                                return page.goto(currentUrl, { waitUntil: 'load' })
+                                return page.goto(currentUrl, { waitUntil: 'networkidle2' })
                             }).then(function() {
                                 return page.evaluate(function() {
                                     return {
