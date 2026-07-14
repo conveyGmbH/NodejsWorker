@@ -33,12 +33,12 @@ jobs:
 
       - name: Build and push the image
         run: |
-          docker build -t conveyacrtest.azurecr.io/nodejsworker:${{ github.sha }} .
-          docker push conveyacrtest.azurecr.io/nodejsworker:${{ github.sha }}
+          docker build -t conveyacrtest.azurecr.io/nodejsworker:indev-${{ github.sha }} .
+          docker push conveyacrtest.azurecr.io/nodejsworker:indev-${{ github.sha }}
 
       - name: Deploy to App Service
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'NodejsWebAppTest1'
-          images: 'conveyacrtest.azurecr.io/nodejsworker:${{ github.sha }}'
+          images: 'conveyacrtest.azurecr.io/nodejsworker:indev-${{ github.sha }}'
           slot-name: 'production'
