@@ -46,7 +46,7 @@
         },
 
         activity: function () {
-            const testing = process.env.TESTING
+            const testing = process.env.TESTING === 'true';
             Log.call(Log.l.trace, `${logPrefix}.activity`);
             var that = this;
             const pAktionStatus = `URL_START-${this.urluuid}`;
