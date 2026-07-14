@@ -16,7 +16,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: indev
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
