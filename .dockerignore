@@ -1,0 +1,26 @@
+# Node modules
+node_modules
+
+# Git
+.git
+.gitignore
+.github
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Dotenv / Similar
+.env
+.env.*
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# IDE Specific
+.vscode
+
+# Debug files
+debug/
+*.log

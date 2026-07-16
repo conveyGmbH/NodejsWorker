@@ -1,0 +1,48 @@
+name: Build and deploy container to Azure Web Apps Nodejstestclient01 & Nodejstestmain
+
+on:
+  push:
+    branches: [ Test ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+
+      - name: Log in to Azure ACR
+        run: az acr login --name conveyacrtest
+
+      - name: Build and push the image
+        run: |
+          docker build -t conveyacrtest.azurecr.io/nodejsworker:test-${{ github.sha }} .
+          docker push conveyacrtest.azurecr.io/nodejsworker:test-${{ github.sha }}
+
+      - name: Deploy to App Service (main)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'nodejstestmain-linux'
+          images: 'conveyacrtest.azurecr.io/nodejsworker:test-${{ github.sha }}'
+          slot-name: 'production'
+
+      - name: Deploy to App Service (client01)
+        uses: azure/webapps-deploy@v3
+        with: 
+          app-name: 'nodejstestclient01'
+          images: 'conveyacrtest.azurecr.io/nodejsworker:test-${{ github.sha }}'
+          slot-name: 'production'
