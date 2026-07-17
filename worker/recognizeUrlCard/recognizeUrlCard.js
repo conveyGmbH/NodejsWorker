@@ -140,6 +140,7 @@
                 });
             }).then(function insertImport_Cardscan() {
                 Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
+                Log.call(Log.l.trace, "Starting Import_Cardscan insert");
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -158,7 +159,7 @@
                     function insertError(error) {
                         that.errorCount++;
                         err = error;
-                        Log.print(Log.l.error, "Error: " + error);
+                        Log.print(Log.l.error, "Import_Cardscan Insert Error: " + error);
                     },
                     {
                         KontaktID: currentKontaktID,
@@ -170,6 +171,7 @@
 
             }).then(function insertDOC1() {
                 Log.call(Log.l.trace, `${logPrefix}.insertDOC1`);
+                Log.call(Log.l.trace, "Starting Doc1 Insert")
                 if (!currentId || err || !importCardscanId) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -189,7 +191,7 @@
                     function insertError(error) {
                         that.errorCount++;
                         err = error;
-                        Log.print(Log.l.error, "Error: " + error); 
+                        Log.print(Log.l.error, "DOC1 Insert Error: " + error); 
                     },
                     {
                         DOC1IMPORT_CARDSCANVIEWID: importCardscanId,
