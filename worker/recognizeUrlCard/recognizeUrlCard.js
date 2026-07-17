@@ -140,7 +140,6 @@
                 });
             }).then(function insertImport_Cardscan() {
                 Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
-                Log.print(Log.l.trace, "Starting Import_Cardscan insert");
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -150,6 +149,7 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
+                Log.print(Log.l.trace, "Starting Import_Cardscan insert");
 
                 return that._importCardscan_ODataView.insert(
                     function insertSuccess(response) {
@@ -171,7 +171,6 @@
 
             }).then(function insertDOC1() {
                 Log.call(Log.l.trace, `${logPrefix}.insertDOC1`);
-                Log.print(Log.l.trace, "Starting Doc1 Insert")
                 if (!currentId || err || !importCardscanId) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -219,6 +218,7 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
+                Log.print(Log.l.trace, "Starting ImportBarcodeScan Select")
                 return that._importBarcodeScan_ODataView.selectById(
                     function selectSuccess(json) {
                         Log.print(Log.l.info, "selectImportBarcodeScan select success.");
