@@ -140,7 +140,7 @@
                 });
             }).then(function insertImport_Cardscan() {
                 Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
-                Log.call(Log.l.trace, "Starting Import_Cardscan insert");
+                Log.print(Log.l.trace, "Starting Import_Cardscan insert");
                 if (!currentId || err) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
@@ -171,7 +171,7 @@
 
             }).then(function insertDOC1() {
                 Log.call(Log.l.trace, `${logPrefix}.insertDOC1`);
-                Log.call(Log.l.trace, "Starting Doc1 Insert")
+                Log.print(Log.l.trace, "Starting Doc1 Insert")
                 if (!currentId || err || !importCardscanId) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
