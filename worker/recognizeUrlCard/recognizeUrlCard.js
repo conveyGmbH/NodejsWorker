@@ -97,6 +97,7 @@
                     return WinJS.Promise.as();
                 }
                 Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
+                const screenshotTimingStart = Date.now();
                 return toWinJSPromise(
                     puppeteer.launch({
                         args: ['--disable-dev-shm-usage']
@@ -116,6 +117,7 @@
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
                                 screenshotData = image;
+                                console.log("SCREENSHOT_TIMING: result=success duration_ms=" + (Date.now() - screenshotTimingStart));
                                 if (testing) {
                                     const debugPath = path.join(__dirname, 'debug', 'screenshot.png');
                                     fs.writeFileSync(debugPath, Buffer.from(image, 'base64'));
@@ -130,10 +132,11 @@
                         });
                     })
                 ).then(function() {
-                    Log.ret(Log.l.trace);   
+                    Log.ret(Log.l.trace);
                 }, function (error) {
                     that.errorCount++;
                     err = error;
+                    Log.print(Log.l.error, "SCREENSHOT_TIMING: result=failure duration_ms=" + (Date.now() - screenshotTimingStart));
                     Log.print(Log.l.error, "Screenshot failed: " + error );
                     Log.print(Log.l.error, "Stack: " + error.stack);
                     Log.ret(Log.l.trace);
