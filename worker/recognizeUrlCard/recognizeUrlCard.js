@@ -98,14 +98,24 @@
                 }
                 Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
                 const screenshotTimingStart = Date.now();
+                var stepTimingStart = screenshotTimingStart;
+                function logStepTiming(step) {
+                    var now = Date.now();
+                    console.log("SCREENSHOT_TIMING: step=" + step + " duration_ms=" + (now - stepTimingStart));
+                    stepTimingStart = now;
+                }
                 return toWinJSPromise(
                     puppeteer.launch({
                         args: ['--disable-dev-shm-usage']
                     }).then(function(browser) {
+                        logStepTiming("launch");
                         return browser.newPage().then(function(page) {
+                            logStepTiming("newPage");
                             return page.setViewport({ width: 500, height: 1200}).then(function (){
+                                logStepTiming("setViewport");
                                 return page.goto(currentUrl, { waitUntil: 'networkidle2' })
                             }).then(function() {
+                                logStepTiming("goto");
                                 return page.evaluate(function() {
                                     return {
                                         width: document.documentElement.scrollWidth,
@@ -113,9 +123,11 @@
                                     };
                                 });
                             }).then(function(dimensions) {
+                                logStepTiming("evaluate");
                                 screenshotDimensions = dimensions;
                                 return page.screenshot({ fullPage: true, encoding: 'base64' });
                             }).then(function(image) {
+                                logStepTiming("screenshot");
                                 screenshotData = image;
                                 console.log("SCREENSHOT_TIMING: result=success duration_ms=" + (Date.now() - screenshotTimingStart));
                                 if (testing) {
@@ -126,7 +138,9 @@
                                 console.log('Screenshot success')
                             });
                         }).then(function() {
-                            return browser.close();
+                            return browser.close().then(function() {
+                                logStepTiming("close");
+                            });
                         }, function(e) {
                             return browser.close().then(function() { throw e; });
                         });
