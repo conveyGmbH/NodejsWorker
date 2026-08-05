@@ -34,6 +34,8 @@
             const uuid = UUID.create();
             this.urluuid = uuid.toString();
 
+            this.screenshotterUrl = process.env.SCREENSHOTTER_URL
+
             // TODO: white-/blacklist?
 
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
@@ -96,51 +98,42 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                Log.print(Log.l.info, "Puppeteer cache dir: " + require('puppeteer').executablePath());
-                const screenshotTimingStart = Date.now();
-                return toWinJSPromise(
-                    puppeteer.launch({
-                        args: ['--disable-dev-shm-usage']
-                    }).then(function(browser) {
-                        return browser.newPage().then(function(page) {
-                            return page.setViewport({ width: 500, height: 1200}).then(function (){
-                                return page.goto(currentUrl, { waitUntil: 'networkidle2' })
-                            }).then(function() {
-                                return page.evaluate(function() {
-                                    return {
-                                        width: document.documentElement.scrollWidth,
-                                        height: document.documentElement.scrollHeight
-                                    };
-                                });
-                            }).then(function(dimensions) {
-                                screenshotDimensions = dimensions;
-                                return page.screenshot({ fullPage: true, encoding: 'base64' });
-                            }).then(function(image) {
-                                screenshotData = image;
-                                console.log("SCREENSHOT_TIMING: result=success duration_ms=" + (Date.now() - screenshotTimingStart));
-                                if (testing) {
-                                    const debugPath = path.join(__dirname, 'debug', 'screenshot.png');
-                                    fs.writeFileSync(debugPath, Buffer.from(image, 'base64'));
-                                    console.log('Debug screenshot saved to ' + debugPath);
-                                }
-                                console.log('Screenshot success')
-                            });
-                        }).then(function() {
-                            return browser.close();
-                        }, function(e) {
-                            return browser.close().then(function() { throw e; });
-                        });
-                    })
-                ).then(function() {
-                    Log.ret(Log.l.trace);
-                }, function (error) {
+                return WinJS.xhr({
+                    type: "POST",
+                    url: that.screenshotterUrl + '/screenshot',
+                    headers: {"Content-Type": "application/json"},
+                    data: JSON.stringify({ url: currentUrl}),
+                    customRequestInitializer: function(req) {
+                        req.timeout = 60000
+                    }
+                }).then(function requestSuccess(response){
+                    if (!response.responseText) {
+                        that.errorCount++
+                        err = new Error("Empty screenshot response");
+                        Log.print(Log.l.error, "Screenshot returned empty body. duration_ms=" + (Date.now() - ActivityStart));
+                        return
+                    }
+                    try {
+                        var body = JSON.parse(response.responseText);
+                        screenshotData = body.image;
+                        screenshotDimensions = { height: body.height, width: body.width };
+                        Log.print(Log.l.trace, "Screenshot received. Dimensions: " + body.width + "x" + body.height + " duration_ms=" + (Date.now() - ActivityStart));
+                        if (testing) {
+                            fs.writeFileSync(path.join(__dirname, 'debug', 'screenshot.png'),
+                                            Buffer.from(body.image, 'base64'));
+                        }
+                    } catch (error) {
+                        that.errorCount++;
+                        err = error;
+                        Log.print(Log.l.error, "Could not parse screenshot response: " + error + " duration_ms=" + (Date.now() - ActivityStart));
+                    }
+                }, function requestFailure(errorResponse){
                     that.errorCount++;
-                    err = error;
-                    Log.print(Log.l.error, "SCREENSHOT_TIMING: result=failure duration_ms=" + (Date.now() - screenshotTimingStart));
-                    Log.print(Log.l.error, "Screenshot failed: " + error );
-                    Log.print(Log.l.error, "Stack: " + error.stack);
+                    err = errorResponse;
+                    Log.print(Log.l.error, "Screenshot request failed: status=" + (errorResponse && errorResponse.status) + " duration_ms=" + (Date.now() - ActivityStart));
+                }).then(function() {
                     Log.ret(Log.l.trace);
-                });
+                })
             }).then(function insertImport_Cardscan() {
                 Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
                 if (!currentId || err) {
