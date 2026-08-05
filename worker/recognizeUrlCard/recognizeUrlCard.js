@@ -11,7 +11,6 @@ const { url } = require("inspector");
     "use strict";
 
     const UUID = require("uuid-js");
-    const puppeteer = require("puppeteer");
     const fs = require("fs");
     const path = require("path");
     const logPrefix = 'recognizeUrlCard';
