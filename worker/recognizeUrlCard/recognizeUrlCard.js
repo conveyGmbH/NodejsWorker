@@ -4,6 +4,8 @@
 /// <reference path="../../lib/convey/scripts/appSettings.js" />
 /// <reference path="../../lib/convey/scripts/dataService.js" />
 
+const { url } = require("inspector");
+
 
 (function () {
     "use strict";
@@ -98,6 +100,7 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
+                Log.print(Log.l.trace, `Handing ${currentUrl} to screenshotter at ${that.screenshotterUrl}`);
                 return WinJS.xhr({
                     type: "POST",
                     url: that.screenshotterUrl + '/screenshot',
