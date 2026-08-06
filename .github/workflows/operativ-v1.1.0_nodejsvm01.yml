@@ -1,14 +1,19 @@
-name: Build and deploy to Deimos - NodejsWebAppTest1
+﻿# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js app to Azure Web App - NodeJsVM01
 
 on:
   push:
     branches:
-      - master
+      - Operativ-v1.1.0
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -17,12 +22,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '24.x'
-
-      - name: npm ci, build, and test
-        run: |
-          npm ci
-          npm run build --if-present
-          npm run test --if-present
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -37,10 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'indev'
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -54,13 +54,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F6E927284C074218B784132503D7B685 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D5D72E9DDCF94D83AC2E956DF7162CD7 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_83E3CE6429CF4790A1563F7ECF095A86 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2770B507BCD84786864995125FFE572E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_266380A3831A4F3F86EBDC43E1D0B0E8 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_234048F0B15A48ACACF582F73DF9C6B0 }}
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'NodejsWebAppTest1'
-          slot-name: 'production'
+          app-name: 'NodeJsVM01'
+          slot-name: 'Production'
           package: .
+          
