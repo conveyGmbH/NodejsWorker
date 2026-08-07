@@ -35,7 +35,8 @@ const { url } = require("inspector");
             const uuid = UUID.create();
             this.urluuid = uuid.toString();
 
-            this.screenshotterUrl = process.env.SCREENSHOTTER_URL
+            this.screenshotterUrl = process.env.SCREENSHOTTER_URL;
+            this.screenshotterKey = process.env.SCREENSHOTTER_KEY;
 
             // TODO: white-/blacklist?
 
@@ -103,7 +104,10 @@ const { url } = require("inspector");
                 return WinJS.xhr({
                     type: "POST",
                     url: that.screenshotterUrl + '/screenshot',
-                    headers: {"Content-Type": "application/json"},
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-API-Key": that.screenshotterKey
+                    },
                     data: JSON.stringify({ url: currentUrl}),
                     customRequestInitializer: function(req) {
                         req.timeout = 60000
