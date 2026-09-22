@@ -339,7 +339,7 @@ const { url } = require("inspector");
                     return WinJS.Promise.as();
                 }
                 if (isBlacklisted) {
-                    currentSynchronisationsjobData.FollowUp = 'URL_BLACKLISTED';
+                    currentSynchronisationsjobData.FollowUp = 'URL_BLACKLISTED_ERROR';
                 } else if (!err) {
                     currentSynchronisationsjobData.FollowUp = 'URL_DONE'
                 } else {
