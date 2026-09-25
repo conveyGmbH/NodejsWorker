@@ -25,6 +25,30 @@ const { url } = require("inspector");
         }, onCancel);
     };
 
+    function loadBlacklist(that) {
+        var url = AppData.getBaseURL(AppData.appSettings.odata.onlinePort) + "/" +
+                AppData.appSettings.odata.onlinePath + "/HTTPOCRBlackListRT?$format=json";
+        var options = AppData.initXhrOptions("GET", url, false);
+        return WinJS.xhr(options).then(function (response) {
+            var json = JSON.parse(response.responseText);
+            var rows = (json && json.d && json.d.results) || [];
+            var fresh = [];
+            rows.forEach(function (r) { fresh.push(r.BLEntry); });
+            that.blacklist = fresh;
+            Log.print(Log.l.info, "blacklist loaded: " + fresh.length);
+        }, function (err) {
+            Log.print(Log.l.error, "blacklist GET error: " + AppData.getErrorMsgFromResponse(err));
+        });
+    };
+
+    function refreshBlacklist(that) {
+        if (Date.now() - that.blacklistTime < 60 * 60 * 1000) {
+            return WinJS.Promise.as();
+        }
+        that.blacklistTime = Date.now()
+        return loadBlacklist(that);
+    }
+
     function blacklistCheck(url, blacklist) {
         var host;
         try {
@@ -36,7 +60,7 @@ const { url } = require("inspector");
             try { return new URL(entry).hostname === host; }
             catch (e) { return false; }
         });
-    }
+    };
 
     var dispatcher = {
         startup: function () {
@@ -54,21 +78,7 @@ const { url } = require("inspector");
             // TODO: white-/blacklist?
             var that = this;
             this.blacklist = [];
-            var url = AppData.getBaseURL(AppData.appSettings.odata.onlinePort) + "/" +
-                    AppData.appSettings.odata.onlinePath + "/HTTPOCRBlackListRT?$format=json";
-            var options = AppData.initXhrOptions("GET", url, false);
-            var BlacklistPromise = WinJS.xhr(options).then(function (response) {
-                var json = JSON.parse(response.responseText);   // OData JSON comes back on responseText
-                var rows = (json && json.d && json.d.results) || [];
-                Log.print(Log.l.info, "blacklist rows: " + rows.length);
-                rows.forEach(function (r) { Log.print(Log.l.info, "BLEntry=" + r.BLEntry); });
-                rows.forEach(function (r) { 
-                    that.blacklist.push(r.BLEntry)
-                });
-                // Log.print(Log.l.info, "blacklist now holds: " + that.blacklist.length);
-            }, function (err) {
-                Log.print(Log.l.error, "blacklist GET error: " + AppData.getErrorMsgFromResponse(err));
-            });
+            this.blacklistTime = Date.now();
 
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._doc1ImportCardscan_ODataView = AppData.getFormatView("DOC1IMPORT_CARDSCAN", 0, false);
@@ -76,7 +86,7 @@ const { url } = require("inspector");
             this._importBarcodeScan_ODataView = AppData.getFormatView("ImportBarcodeScan", 0, false);
 
             Log.ret(Log.l.trace);
-            return BlacklistPromise;
+            return loadBlacklist(that);
         },
 
         activity: function () {
@@ -98,38 +108,38 @@ const { url } = require("inspector");
             var ActivityStart = null;
             var isBlacklisted = false;
 
-            Log.print(Log.l.info, "blacklist now holds: " + that.blacklist.length);
-
             // Step 1: fetch next record to process
-            var ret = AppData.call("PRC_STARTURLOCREX", {
-                pAktionStatus: pAktionStatus
-            },
-            function callSuccess(json) {
-                Log.print(Log.l.trace, "PRC_STARTURLOCREX success");
-                if (json.d.results && json.d.results.length > 0) {
-                    currentId = json.d.results[0].SynchronisationsjobID;
-                    currentKontaktID = json.d.results[0].KontaktID;
-                    currentUrl = json.d.results[0].Request_Barcode;
-                    currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
-                    Log.print(Log.l.trace, "Found a row: ID " + currentId);
-                    isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
-                    Log.print(Log.l.trace, "Current Records' URL is blacklisted: ", isBlacklisted);
-                } else if (testing) {
-                    Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
-                    currentId = -1;
-                    currentUrl = 'http://quicode.de/whatever?x=1';
-                    currentKontaktID = -1;
-                    currentImportBarcodeScanID = -1;
-                    isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
-                    Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
-                } else {
-                    Log.print(Log.l.info, "No rows to process");
-                }
-            },
-            function callError(error) {
-                that.errorCount++;
-                err = error;
-                Log.print(Log.l.error, "Error: " + error);
+            var ret = refreshBlacklist(that).then(function startUrlOcr() {
+                return AppData.call("PRC_STARTURLOCREX", {
+                    pAktionStatus: pAktionStatus
+                },
+                function callSuccess(json) {
+                    Log.print(Log.l.trace, "PRC_STARTURLOCREX success");
+                    if (json.d.results && json.d.results.length > 0) {
+                        currentId = json.d.results[0].SynchronisationsjobID;
+                        currentKontaktID = json.d.results[0].KontaktID;
+                        currentUrl = json.d.results[0].Request_Barcode;
+                        currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
+                        Log.print(Log.l.trace, "Found a row: ID " + currentId);
+                        isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
+                    } else if (testing) {
+                        Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
+                        currentId = -1;
+                        currentUrl = 'http://quicode.de/whatever?x=1';
+                        currentKontaktID = -1;
+                        currentImportBarcodeScanID = -1;
+                        isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
+                    } else {
+                        Log.print(Log.l.info, "No rows to process");
+                    }
+                },
+                function callError(error) {
+                    that.errorCount++;
+                    err = error;
+                    Log.print(Log.l.error, "Error: " + error);
+                });
             }).then(function screenshot() {
                 Log.call(Log.l.trace, `${logPrefix}.screenshot`);
                 ActivityStart = Date.now();
