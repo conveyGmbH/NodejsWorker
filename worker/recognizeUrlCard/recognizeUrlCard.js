@@ -4,9 +4,6 @@
 /// <reference path="../../lib/convey/scripts/appSettings.js" />
 /// <reference path="../../lib/convey/scripts/dataService.js" />
 
-const { url } = require("inspector");
-
-
 (function () {
     "use strict";
 
@@ -23,7 +20,44 @@ const { url } = require("inspector");
                 error(e);
             }
         }, onCancel);
+    };
+
+    function loadBlacklist(that) {
+        var url = AppData.getBaseURL(AppData.appSettings.odata.onlinePort) + "/" +
+                AppData.appSettings.odata.onlinePath + "/HTTPOCRBlackListRT?$format=json";
+        var options = AppData.initXhrOptions("GET", url, false);
+        return WinJS.xhr(options).then(function (response) {
+            var json = JSON.parse(response.responseText);
+            var rows = (json && json.d && json.d.results) || [];
+            var fresh = [];
+            rows.forEach(function (r) { fresh.push(r.BLEntry); });
+            that.blacklist = fresh;
+            Log.print(Log.l.info, "blacklist loaded: " + fresh.length);
+        }, function (err) {
+            Log.print(Log.l.error, "blacklist GET error: " + AppData.getErrorMsgFromResponse(err));
+        });
+    };
+
+    function refreshBlacklist(that) {
+        if (Date.now() - that.blacklistTime < 60 * 60 * 1000) {
+            return WinJS.Promise.as();
+        }
+        that.blacklistTime = Date.now()
+        return loadBlacklist(that);
     }
+
+    function blacklistCheck(url, blacklist) {
+        var host;
+        try {
+            host = new URL(url).hostname;
+        } catch (e) {
+            return false;
+        };
+        return blacklist.some(function (entry) {
+            try { return new URL(entry).hostname === host; }
+            catch (e) { return false; }
+        });
+    };
 
     var dispatcher = {
         startup: function () {
@@ -39,6 +73,9 @@ const { url } = require("inspector");
             this.screenshotterKey = process.env.SCREENSHOTTER_KEY;
 
             // TODO: white-/blacklist?
+            var that = this;
+            this.blacklist = [];
+            this.blacklistTime = Date.now();
 
             this._importCardscan_ODataView = AppData.getFormatView("IMPORT_CARDSCAN", 0, false);
             this._doc1ImportCardscan_ODataView = AppData.getFormatView("DOC1IMPORT_CARDSCAN", 0, false);
@@ -46,7 +83,7 @@ const { url } = require("inspector");
             this._importBarcodeScan_ODataView = AppData.getFormatView("ImportBarcodeScan", 0, false);
 
             Log.ret(Log.l.trace);
-            return WinJS.Promise.as();
+            return loadBlacklist(that);
         },
 
         activity: function () {
@@ -66,37 +103,44 @@ const { url } = require("inspector");
             var currentSynchronisationsjobData = null;
             var err = null;
             var ActivityStart = null;
+            var isBlacklisted = false;
 
             // Step 1: fetch next record to process
-            var ret = AppData.call("PRC_STARTURLOCREX", {
-                pAktionStatus: pAktionStatus
-            },
-            function callSuccess(json) {
-                Log.print(Log.l.trace, "PRC_STARTURLOCREX success");
-                if (json.d.results && json.d.results.length > 0) {
-                    currentId = json.d.results[0].SynchronisationsjobID;
-                    currentKontaktID = json.d.results[0].KontaktID;
-                    currentUrl = json.d.results[0].Request_Barcode;
-                    currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
-                    Log.print(Log.l.trace, "Found a row: ID " + currentId);
-                } else if (testing) {
-                    Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
-                    currentId = -1;
-                    currentUrl = 'https://cards.boschmanufacturingsolutions.com/profile/ac9c7fe5-7427-4ef7-9562-2f0931459f44/qrcode';
-                    currentKontaktID = -1;
-                    currentImportBarcodeScanID = -1;
-                } else {
-                    Log.print(Log.l.info, "No rows to process");
-                }
-            },
-            function callError(error) {
-                that.errorCount++;
-                err = error;
-                Log.print(Log.l.error, "Error: " + error);
+            var ret = refreshBlacklist(that).then(function startUrlOcr() {
+                return AppData.call("PRC_STARTURLOCREX", {
+                    pAktionStatus: pAktionStatus
+                },
+                function callSuccess(json) {
+                    Log.print(Log.l.trace, "PRC_STARTURLOCREX success");
+                    if (json.d.results && json.d.results.length > 0) {
+                        currentId = json.d.results[0].SynchronisationsjobID;
+                        currentKontaktID = json.d.results[0].KontaktID;
+                        currentUrl = json.d.results[0].Request_Barcode;
+                        currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
+                        Log.print(Log.l.trace, "Found a row: ID " + currentId);
+                        isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
+                    } else if (testing) {
+                        Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
+                        currentId = -1;
+                        currentUrl = 'http://quicode.de/whatever?x=1';
+                        currentKontaktID = -1;
+                        currentImportBarcodeScanID = -1;
+                        isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
+                    } else {
+                        Log.print(Log.l.info, "No rows to process");
+                    }
+                },
+                function callError(error) {
+                    that.errorCount++;
+                    err = error;
+                    Log.print(Log.l.error, "Error: " + error);
+                });
             }).then(function screenshot() {
                 Log.call(Log.l.trace, `${logPrefix}.screenshot`);
                 ActivityStart = Date.now();
-                if (!currentId || err) {
+                if (!currentId || err || isBlacklisted) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
@@ -142,7 +186,7 @@ const { url } = require("inspector");
                 })
             }).then(function insertImport_Cardscan() {
                 Log.call(Log.l.trace, `${logPrefix}.insertImport_Cardscan`);
-                if (!currentId || err) {
+                if (!currentId || err || isBlacklisted) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
@@ -173,7 +217,7 @@ const { url } = require("inspector");
 
             }).then(function insertDOC1() {
                 Log.call(Log.l.trace, `${logPrefix}.insertDOC1`);
-                if (!currentId || err || !importCardscanId) {
+                if (!currentId || err || !importCardscanId || isBlacklisted) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 };
@@ -301,8 +345,10 @@ const { url } = require("inspector");
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                if (!err) {
-                    currentSynchronisationsjobData.FollowUp = 'URL_DONE';
+                if (isBlacklisted) {
+                    currentSynchronisationsjobData.FollowUp = 'URL_BLACKLISTED_ERROR';
+                } else if (!err) {
+                    currentSynchronisationsjobData.FollowUp = 'URL_DONE'
                 } else {
                     currentSynchronisationsjobData.FollowUp = 'URL_ERROR';
                 }
