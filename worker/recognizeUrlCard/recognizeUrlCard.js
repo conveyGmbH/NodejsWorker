@@ -309,7 +309,7 @@
                 })
             }).then(function selectForUpdate() {
                 Log.call(Log.l.trace, `${logPrefix}.selectForUpdate`);
-                if (err || !currentId) {
+                if (!currentId) {
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
