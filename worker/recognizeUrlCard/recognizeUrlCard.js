@@ -4,9 +4,6 @@
 /// <reference path="../../lib/convey/scripts/appSettings.js" />
 /// <reference path="../../lib/convey/scripts/dataService.js" />
 
-const { url } = require("inspector");
-
-
 (function () {
     "use strict";
 
