@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - NodejsWebAppTest1
+name: Build and deploy to Deimos - NodejsWebAppTest1
 
 on:
   push:
@@ -19,11 +16,11 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: '24.x'
 
-      - name: npm install, build, and test
+      - name: npm ci, build, and test
         run: |
-          npm install
+          npm ci
           npm run build --if-present
           npm run test --if-present
 
@@ -40,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'production'
+      name: 'indev'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT

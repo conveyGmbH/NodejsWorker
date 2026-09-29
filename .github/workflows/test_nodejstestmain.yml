@@ -4,9 +4,6 @@
 name: Build and deploy Node.js app to Azure Web App - NodejsTestMain
 
 on:
-  push:
-    branches:
-      - Test
   workflow_dispatch:
 
 jobs:

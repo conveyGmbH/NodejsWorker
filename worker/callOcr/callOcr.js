@@ -438,6 +438,7 @@
                 return promise;
             }).then(function selectImportCardscan() {
                 if (!importcardscanid || !err && !bulkError) {
+                    // skip SELECT if NO error is occured
                     return WinJS.Promise.as();
                 }
                 Log.call(Log.l.trace, "callOcr.", "selectImportCardscan: importcardscanid=" + importcardscanid);
