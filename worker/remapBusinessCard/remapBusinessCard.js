@@ -35,12 +35,60 @@
     5. Formatting: Proper-case all names (e.g., PIOTR -> Piotr). Keep 'ń', 'ł', 'ä', 'ö' intact.
     6. Validation: If the data is clearly NOT a business card (like an eBay pickup code or a grocery receipt), return null for all name fields.
 
-    Output:
-    Return ONLY a valid JSON object with these EXACT keys:
-    CompanyNames, FirstName, LastName, JobTitles, Emails, WorkPhones, MobilePhones, Websites, streetAddress, city, postalCode.
-
     Important: All fields in the JSON must be Strings, not Arrays. If there are multiple values, join them with a semicolon (e.g., 'Email1; Email2').
     `;
+
+    const systemSchema = {
+        type: "object",
+        properties: {
+            CompanyNames: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            FirstName: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            LastName: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            JobTitles: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            Emails: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            WorkPhones: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            MobilePhones: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            Websites: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            streetAddress: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            city: {
+                type: ["string", "null"],
+                description: "..."
+            },
+            postalCode: {
+                type: ["string", "null"],
+                description: "..."
+            }
+        },
+        required: ["CompanyNames", "FirstName", "LastName", "JobTitles", "Emails", "WorkPhones", "MobilePhones", "Websites", "streetAddress", "city", "postalCode"],
+        additionalProperties: false
+    }
 
 
     var dispatcher = {
@@ -168,7 +216,14 @@
                             { role: "system", content: systemPrompt },
                             { role: "user", content: `Please audit and remap this record: ${JSON.stringify(data)}` }
                         ],
-                        response_format: { type: "json_object" }
+                        response_format: { 
+                            type: "json_schema",
+                            json_schema: {
+                                name: "business_card",
+                                strict: true,
+                                schema: systemSchema
+                            }
+                        }
                     }),
                     signal: controller.signal
                 }).then(function(res) { 
@@ -194,7 +249,17 @@
                         if (usage) {
                             Log.print(Log.l.info, `TOKEN_USAGE prompt=${usage.prompt_tokens} completion=${usage.completion_tokens} total=${usage.total_tokens}`);
                         }
-                        aiResult = JSON.parse(response.choices[0].message.content);
+                        var choice = response.choices[0];
+                        if (choice.finish_reason !== "stop") {
+                            throw new Error("AI Response incomplete: finish_reason = " + choice.finish_reason);
+                        }
+                        if (choice.message.refusal) {
+                            throw new Error("AI refused: " + choice.message.refusal);
+                        }
+                        if (!choice.message.content) {
+                            throw new Error("AI response empty!");
+                        }
+                        aiResult = JSON.parse(choice.message.content);
                         that.successCount++;
                         Log.print(Log.l.info, "AI processing successful");
                     } catch (e) {
@@ -227,6 +292,8 @@
                     Log.print(Log.l.error, "aiResult is empty! Skipping insert and setting error...");
                     that.errorCount++;
                     err = "No aiResult received";
+                    Log.ret(Log.l.trace);
+                    return WinJS.Promise.as();
                 }
 
                 // Normal insert path
@@ -279,24 +346,31 @@
                     Log.ret(Log.l.trace);
                     return WinJS.Promise.as();
                 }
-                return that._importCardscan_ODataView.selectById(
-                    function ok(record) {
-                        record.Button = 'BCI_ERROR';
-                        that._importCardscan_ODataView.update(
-                            function ok() {
-                                Log.print(Log.l.info, "Marked IMPORT_CARDSCAN as BCI_ERROR");
-                            },
-                            function ko(e) {
-                                Log.print(Log.l.error, "Failed to mark BCI_ERROR: " + (e && (e.statusText || e.status) || e));
-                            },
-                            currentId,
-                            record
-                        )
+                var record = null;
+                return WinJS.Promise.as(that._importCardscan_ODataView.selectById(
+                    function ok(json) {
+                        record = json && json.d;
                     },
                     function ko(e) {
                         Log.print(Log.l.error, "Failed to selectById: " + (e && (e.statusText || e.status) || e));
+                    },
+                    currentId
+                )).then(function () {
+                    if (!record) {
+                        return WinJS.Promise.as();
                     }
-                ).then(function () {
+                    record.Button = 'BCI_ERROR';
+                    return that._importCardscan_ODataView.update(
+                        function ok() {
+                            Log.print(Log.l.info, "Marked IMPORT_CARDSCAN as BCI_ERROR");
+                        },
+                        function ko(e) {
+                            Log.print(Log.l.error, "Failed to mark BCI_ERROR: " + (e && (e.statusText || e.status) || e));
+                        },
+                        currentId,
+                        record
+                    );
+                }).then(function () {
                     Log.ret(Log.l.trace);
                 });
 
