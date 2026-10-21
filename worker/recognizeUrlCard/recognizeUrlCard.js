@@ -40,9 +40,11 @@
 
     function refreshBlacklist(that) {
         if (Date.now() - that.blacklistTime < 60 * 60 * 1000) {
+            console.log('No Blacklist refresh needed');
             return WinJS.Promise.as();
         }
         that.blacklistTime = Date.now()
+        console.log('Refreshing Blacklist...');
         return loadBlacklist(that);
     }
 
