@@ -43,18 +43,24 @@
             return WinJS.Promise.as();
         }
         that.blacklistTime = Date.now()
+        Log.print(Log.l.info, "Refreshing Blacklist...");
         return loadBlacklist(that);
     }
 
     function blacklistCheck(url, blacklist) {
-        var host;
+        var scanned;
         try {
-            host = new URL(url).hostname;
+            scanned = new URL(url);
         } catch (e) {
             return false;
         };
         return blacklist.some(function (entry) {
-            try { return new URL(entry).hostname === host; }
+            try { 
+                const bl = new URL(entry);
+                if (bl.hostname !== scanned.hostname) return false;
+                if (bl.pathname === '/') return true;
+                return bl.pathname === scanned.pathname;
+            }
             catch (e) { return false; }
         });
     };
