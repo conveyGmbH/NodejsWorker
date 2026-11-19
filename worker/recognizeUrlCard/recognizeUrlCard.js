@@ -67,6 +67,7 @@
 
     var dispatcher = {
         startup: function () {
+            console.log("RUC BUILD MARKER 2026-11-19 v2");
             Log.call(Log.l.trace, `${logPrefix}.startup`);
             this.successCount = 0;
             this.errorCount = 0;
@@ -133,8 +134,8 @@
                         currentKontaktID = -1;
                         currentImportBarcodeScanID = -1;
                         isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
-                        Log.print(Log.l.trace, "Current Records' URL is: " + currentUrl)
-                        Log.print(Log.l.trace, "Current Blacklist loaded is: " + JSON.stringify(that.blacklist, null, 2));
+                        console.log("Current Records' URL is: " + currentUrl)
+                        console.log("Current Blacklist loaded is: " + JSON.stringify(that.blacklist, null, 2));
                         Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
                     } else {
                         Log.print(Log.l.info, "No rows to process");
