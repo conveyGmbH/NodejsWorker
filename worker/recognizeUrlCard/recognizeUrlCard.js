@@ -32,7 +32,7 @@
             var fresh = [];
             rows.forEach(function (r) { fresh.push(r.BLEntry); });
             that.blacklist = fresh;
-            Log.print(Log.l.info, "blacklist loaded: " + fresh.length);
+            Log.print(Log.l.info, "blacklist loaded: " + JSON.stringify(fresh, null, 2));
         }, function (err) {
             Log.print(Log.l.error, "blacklist GET error: " + AppData.getErrorMsgFromResponse(err));
         });
@@ -67,7 +67,6 @@
 
     var dispatcher = {
         startup: function () {
-            console.log("RUC BUILD MARKER 2026-11-19 v2");
             Log.call(Log.l.trace, `${logPrefix}.startup`);
             this.successCount = 0;
             this.errorCount = 0;
@@ -127,7 +126,6 @@
                         Log.print(Log.l.trace, "Found a row: ID " + currentId);
                         isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
                         console.log("Current Records' URL is: " + currentUrl)
-                        console.log("Current Blacklist loaded is: " + JSON.stringify(that.blacklist, null, 2));
                         Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
                     } else if (testing) {
                         Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
