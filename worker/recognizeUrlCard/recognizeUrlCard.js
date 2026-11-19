@@ -129,10 +129,12 @@
                     } else if (testing) {
                         Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
                         currentId = -1;
-                        currentUrl = 'http://quicode.de/whatever?x=1';
+                        currentUrl = 'https://qr1.me-qr.com/8b8ltdce';
                         currentKontaktID = -1;
                         currentImportBarcodeScanID = -1;
                         isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        Log.print(Log.l.trace, "Current Records' URL is: " + currentUrl)
+                        Log.print(Log.l.trace, "Current Blacklist loaded is: " + JSON.stringify(that.blacklist, null, 2));
                         Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
                     } else {
                         Log.print(Log.l.info, "No rows to process");
