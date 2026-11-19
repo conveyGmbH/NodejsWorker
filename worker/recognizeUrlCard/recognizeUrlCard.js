@@ -126,6 +126,8 @@
                         currentImportBarcodeScanID = json.d.results[0].ImportBarcodeScanID;
                         Log.print(Log.l.trace, "Found a row: ID " + currentId);
                         isBlacklisted = blacklistCheck(currentUrl, that.blacklist);
+                        console.log("Current Records' URL is: " + currentUrl)
+                        console.log("Current Blacklist loaded is: " + JSON.stringify(that.blacklist, null, 2));
                         Log.print(Log.l.trace, "Current Records' URL is blacklisted: " + isBlacklisted);
                     } else if (testing) {
                         Log.print(Log.l.trace, "Testing enabled. Using known link and mock currentID")
